@@ -4,6 +4,7 @@ import WeekPlan from './components/weekplan.jsx';
 import Timer from './components/timer.jsx';
 import { getWeekPlan, TOTAL_WEEKS } from './data/plans.js';
 import { saveCompletedWorkout } from './services/api.js';
+import { useStreak } from './hooks/usestreak.js';
 import './app.css';
 
 const STORAGE_KEY = 'boracorrer-state';
@@ -27,7 +28,9 @@ export default function App() {
     const [currentWeek, setCurrentWeek] = useState(1);
     const [completedDays, setCompletedDays] = useState([]);
     const [activeDayKey, setActiveDayKey] = useState(null);
-    const [view, setView] = useState('loading'); // loading | onboarding | plan | timer
+    const [view, setView] = useState('loading');
+
+    const { registerToday } = useStreak(completedDays);
 
     useEffect(() => {
         const saved = loadState();
@@ -64,6 +67,8 @@ export default function App() {
             if (prev.includes(activeDayKey)) return prev;
             return [...prev, activeDayKey];
         });
+
+        registerToday();
 
         const [week, day] = activeDayKey.split('-');
 
