@@ -1,5 +1,5 @@
 // ===== CONFIGURAÇÃO =====
-const SHEET_ID = 'SEU_SHEET_ID_AQUI';
+const SHEET_ID = '1gjaJHnc1JNUFSyGIX2prcoRHEVHCkFE1FiPyq3xwAZA';
 const PLAN_SHEET_NAME = 'Plano';
 const HISTORY_SHEET_NAME = 'Historico';
 
