@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRunTimer } from '../hooks/useRunTimer.js';
 import { useGeoTracking } from '../hooks/usegeotracking.js';
+import { usePictureInPicture } from '../hooks/usepictureinpicture.js';
 import RunMap from './runmap.jsx';
 import Summary from './summary.jsx';
 import './timer.css';
@@ -64,19 +65,15 @@ function useWakeLock(isActive) {
     }, [isActive]);
 }
 
-// Tela de contagem regressiva 3-2-1
 function CountdownOverlay({ count }) {
     return (
         <div className="countdown-overlay">
-            <div className="countdown-number" key={count}>
-                {count}
-            </div>
+            <div className="countdown-number" key={count}>{count}</div>
             <div className="countdown-label">Prepare-se!</div>
         </div>
     );
 }
 
-// Painel de pausa mostrando próximo bloco
 function PausedPanel({ currentBlock, nextBlock, onResume, onReset, onExit }) {
     const nextLabel = nextBlock
         ? nextBlock.type === 'run'
@@ -140,9 +137,27 @@ export default function Timer({ workout, onWorkoutComplete, onExit, weekNumber, 
         resetTracking
     } = useGeoTracking();
 
-    const [isPaused, setIsPaused] = React.useState(false);
+    const {
+        isSupported: pipSupported,
+        isActive: pipActive,
+        enterPiP,
+        exitPiP,
+        updateState: updatePiP
+    } = usePictureInPicture();
+
+    const [isPaused, setIsPaused] = useState(false);
 
     useWakeLock(isRunning);
+
+    // Sincroniza o estado com o PiP canvas
+    useEffect(() => {
+        updatePiP(
+            secondsLeft,
+            currentBlock?.type || 'walk',
+            currentBlock?.label || 'Caminhe',
+            isRunning
+        );
+    }, [secondsLeft, currentBlock, isRunning, updatePiP]);
 
     useEffect(() => {
         if (isRunning) {
@@ -170,6 +185,7 @@ export default function Timer({ workout, onWorkoutComplete, onExit, weekNumber, 
     }
 
     if (isFinished) {
+        if (pipActive) exitPiP();
         return (
             <Summary
                 totalSeconds={elapsedSeconds}
@@ -185,7 +201,6 @@ export default function Timer({ workout, onWorkoutComplete, onExit, weekNumber, 
     const blockTypeLabel = currentBlock?.type === 'run' ? 'CORRA' : 'CAMINHE';
     const blockColorClass = currentBlock?.type === 'run' ? 'run-mode' : 'walk-mode';
 
-    // Tela de pausa
     if (isPaused) {
         return (
             <div className={`timer-container ${blockColorClass}`}>
@@ -202,14 +217,24 @@ export default function Timer({ workout, onWorkoutComplete, onExit, weekNumber, 
 
     return (
         <div className={`timer-container ${blockColorClass}`}>
-
-            {/* Overlay de contagem regressiva */}
             {countdown !== null && <CountdownOverlay count={countdown} />}
 
-            <button className="btn-exit" onClick={onExit}>✕</button>
+            <div className="timer-top-row">
+                <button className="btn-exit" onClick={onExit}>✕</button>
+
+                {/* Botão PiP */}
+                {pipSupported && isRunning && (
+                    <button
+                        className={`btn-pip ${pipActive ? 'pip-active' : ''}`}
+                        onClick={pipActive ? exitPiP : enterPiP}
+                        title={pipActive ? 'Fechar Picture-in-Picture' : 'Abrir Picture-in-Picture'}
+                    >
+                        {pipActive ? '⊠' : '⧉'}
+                    </button>
+                )}
+            </div>
 
             <div className="block-label">{currentBlock?.label || blockTypeLabel}</div>
-
             <div className="block-type">{blockTypeLabel}</div>
 
             <div className={`time-display ${isCountingDown ? 'time-urgent' : ''}`}>
@@ -225,7 +250,6 @@ export default function Timer({ workout, onWorkoutComplete, onExit, weekNumber, 
 
             {geoError && <div className="geo-error">{geoError}</div>}
 
-            {/* Próximo bloco (visível sempre) */}
             {nextBlock && (
                 <div className="next-block-pill">
                     Próximo: {nextBlock.type === 'run' ? '🏃 Corrida' : '🚶 Caminhada'} · {formatBlockDuration(nextBlock.seconds)}
