@@ -5,6 +5,7 @@
     justify-content: center;
     padding: 24px;
     background: radial-gradient(circle at top, #1e3a8a 0%, #0f172a 70%);
+    overflow-y: auto;
 }
 
 .onboarding-content {
@@ -13,32 +14,54 @@
     width: 100%;
 }
 
-.onboarding-icon {
-    font-size: 56px;
-    margin-bottom: 16px;
+.onboarding-logo {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    margin-bottom: 12px;
+    border-radius: 16px;
 }
 
 .onboarding-content h1 {
     font-size: 28px;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
 
 .onboarding-content p {
     color: #cbd5e1;
-    margin-bottom: 32px;
-    font-size: 15px;
+    margin-bottom: 24px;
+    font-size: 14px;
+}
+
+.auth-tabs {
+    display: flex;
+    background: #1e293b;
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 20px;
+}
+
+.auth-tab {
+    flex: 1;
+    padding: 10px;
+    border-radius: 9px;
+    font-size: 14px;
+    font-weight: 600;
+    background: transparent;
+    color: #64748b;
+    transition: all 0.2s;
+}
+
+.auth-tab.active {
+    background: #0f172a;
+    color: #f1f5f9;
 }
 
 .onboarding-form {
     display: flex;
     flex-direction: column;
     gap: 12px;
-}
-
-.onboarding-form label {
-    text-align: left;
-    font-size: 13px;
-    color: #94a3b8;
+    margin-bottom: 16px;
 }
 
 .onboarding-form input {
@@ -48,18 +71,89 @@
     padding: 14px 16px;
     border-radius: 12px;
     font-size: 15px;
-    margin-bottom: 12px;
+    width: 100%;
+}
+
+.onboarding-form input:focus {
+    outline: none;
+    border-color: #22c55e;
+}
+
+.password-wrapper {
+    position: relative;
+}
+
+.password-wrapper input {
+    padding-right: 48px;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    font-size: 18px;
+    color: #64748b;
+}
+
+.auth-error {
+    background: rgba(239, 68, 68, 0.15);
+    color: #fca5a5;
+    font-size: 13px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    text-align: left;
 }
 
 .onboarding-form .btn-primary {
     background: #22c55e;
     color: #0f172a;
-    padding: 16px;
+    padding: 15px;
     border-radius: 12px;
     font-weight: 700;
     font-size: 16px;
 }
 
 .onboarding-form .btn-primary:disabled {
-    opacity: 0.4;
+    opacity: 0.5;
+}
+
+.auth-divider {
+    position: relative;
+    text-align: center;
+    margin: 16px 0;
+    color: #475569;
+    font-size: 13px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 42%;
+    height: 1px;
+    background: #334155;
+}
+
+.auth-divider::before { left: 0; }
+.auth-divider::after { right: 0; }
+
+.btn-google {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: #ffffff;
+    color: #0f172a;
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.btn-google:disabled {
+    opacity: 0.5;
 }
