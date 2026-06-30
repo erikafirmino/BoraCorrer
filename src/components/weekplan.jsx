@@ -50,102 +50,102 @@ export default function WeekPlan({
     const { isSupported, isEnabled, scheduleReminder } = usePushNotification();
     const [showCalendar, setShowCalendar] = useState(false);
 
+    const firstName = userName ? userName.split(' ')[0] : '';
+
     return (
         <div className="weekplan-container">
 
-            {/* Topbar */}
-            <div className="weekplan-topbar">
-                <div className="streak-badge">
-                    🔥 {streak} {streak === 1 ? 'dia seguido' : 'dias seguidos'}
-                </div>
-                <div className="topbar-actions">
-                    {isSupported && (
-                        <button
-                            className={`topbar-btn ${isEnabled ? 'active' : ''}`}
-                            onClick={scheduleReminder}
-                            title={isEnabled ? 'Lembretes ativos' : 'Ativar lembretes'}
-                        >
-                            {isEnabled ? '🔔' : '🔕'}
+            {/* HERO */}
+            <div className="weekplan-hero">
+                <div className="weekplan-topbar">
+                    <div className="streak-badge">
+                        🔥 {streak} {streak === 1 ? 'dia seguido' : 'dias seguidos'}
+                    </div>
+                    <div className="topbar-actions">
+                        {isSupported && (
+                            <button
+                                className={`topbar-btn ${isEnabled ? 'active' : ''}`}
+                                onClick={scheduleReminder}
+                            >
+                                {isEnabled ? '🔔' : '🔕'}
+                            </button>
+                        )}
+                        <button className="topbar-btn" onClick={() => setShowCalendar(true)}>
+                            📅
                         </button>
-                    )}
+                        <button className="theme-toggle" onClick={toggleTheme}>
+                            {isDark ? '☀️' : '🌙'}
+                        </button>
+                    </div>
+                </div>
+
+                <div className="user-row">
+                    <div className="user-greeting">
+                        Olá,<br />{firstName}! 👋
+                    </div>
+                    <button className="switch-user-btn" onClick={onSwitchUser}>
+                        Trocar usuário
+                    </button>
+                </div>
+
+                <header className="weekplan-header">
                     <button
-                        className="topbar-btn"
-                        onClick={() => setShowCalendar(true)}
-                        title="Ver histórico"
+                        className="week-nav-btn"
+                        disabled={currentWeek <= 1}
+                        onClick={() => onChangeWeek(currentWeek - 1)}
                     >
-                        📅
+                        ‹
                     </button>
-                    <button className="theme-toggle" onClick={toggleTheme}>
-                        {isDark ? '☀️' : '🌙'}
+                    <div className="week-title-block">
+                        <h1>{weekPlan.title}</h1>
+                        <p>{weekPlan.description}</p>
+                    </div>
+                    <button
+                        className="week-nav-btn"
+                        disabled={currentWeek >= totalWeeks}
+                        onClick={() => onChangeWeek(currentWeek + 1)}
+                    >
+                        ›
                     </button>
+                </header>
+            </div>
+
+            {/* BODY */}
+            <div className="weekplan-body">
+                <div className="week-progress-label">
+                    Semana {currentWeek} de {totalWeeks}
                 </div>
-            </div>
 
-            {/* Saudação + troca de usuário */}
-            <div className="user-row">
-                <span className="user-greeting">Olá, {userName}! 👋</span>
-                <button className="switch-user-btn" onClick={onSwitchUser}>
-                    Trocar usuário
-                </button>
-            </div>
+                <OverallProgress completedDays={completedDays} totalWeeks={totalWeeks} />
 
-            {/* Navegação semanal */}
-            <header className="weekplan-header">
-                <button
-                    className="week-nav-btn"
-                    disabled={currentWeek <= 1}
-                    onClick={() => onChangeWeek(currentWeek - 1)}
-                >
-                    ‹
-                </button>
-                <div className="week-title-block">
-                    <h1>{weekPlan.title}</h1>
-                    <p>{weekPlan.description}</p>
-                </div>
-                <button
-                    className="week-nav-btn"
-                    disabled={currentWeek >= totalWeeks}
-                    onClick={() => onChangeWeek(currentWeek + 1)}
-                >
-                    ›
-                </button>
-            </header>
+                <div className="days-list">
+                    {days.map((day) => {
+                        const dayKey = `${currentWeek}-${day}`;
+                        const isDone = completedDays.includes(dayKey);
 
-            <div className="week-progress-label">
-                Semana {currentWeek} de {totalWeeks}
-            </div>
-
-            <OverallProgress completedDays={completedDays} totalWeeks={totalWeeks} />
-
-            {/* Lista de dias */}
-            <div className="days-list">
-                {days.map((day) => {
-                    const dayKey = `${currentWeek}-${day}`;
-                    const isDone = completedDays.includes(dayKey);
-
-                    return (
-                        <div className={`day-card ${isDone ? 'day-done' : ''}`} key={dayKey}>
-                            <div className="day-info">
-                                <div className="day-checkbox">{isDone ? '✓' : day}</div>
-                                <div>
-                                    <div className="day-name">Dia {day}</div>
-                                    <div className="day-duration">
-                                        {formatDuration(getTotalDurationSeconds(weekPlan.workout))}
+                        return (
+                            <div className={`day-card ${isDone ? 'day-done' : ''}`} key={dayKey}>
+                                <div className="day-info">
+                                    <div className="day-checkbox">{isDone ? '✓' : day}</div>
+                                    <div>
+                                        <div className="day-name">Dia {day}</div>
+                                        <div className="day-duration">
+                                            {formatDuration(getTotalDurationSeconds(weekPlan.workout))}
+                                        </div>
                                     </div>
                                 </div>
+                                <button
+                                    className={`day-action-btn ${isDone ? 'redo' : 'start'}`}
+                                    onClick={() => onStartDay(dayKey)}
+                                >
+                                    {isDone ? 'Refazer' : 'Iniciar'}
+                                </button>
                             </div>
-                            <button
-                                className={`day-action-btn ${isDone ? 'redo' : 'start'}`}
-                                onClick={() => onStartDay(dayKey)}
-                            >
-                                {isDone ? 'Refazer' : 'Iniciar'}
-                            </button>
-                        </div>
-                    );
-                })}
+                        );
+                    })}
+                </div>
             </div>
 
-            {/* Calendário de histórico */}
             {showCalendar && <Calendar onClose={() => setShowCalendar(false)} />}
         </div>
     );
