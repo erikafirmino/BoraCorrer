@@ -8,6 +8,23 @@ export default defineConfig({
         VitePWA({
             registerType: 'autoUpdate',
             includeAssets: ['icons/192.png', 'icons/512.png'],
+            workbox: {
+                // Não intercepta tiles do OSM nem CDN do Leaflet
+                navigateFallbackDenylist: [/^\/api/, /openstreetmap/, /cdnjs/],
+                runtimeCaching: [
+                    {
+                        urlPattern: /^https:\/\/[abc]\.tile\.openstreetmap\.org/,
+                        handler: 'CacheFirst',
+                        options: {
+                            cacheName: 'osm-tiles',
+                            expiration: {
+                                maxEntries: 200,
+                                maxAgeSeconds: 60 * 60 * 24 * 7
+                            }
+                        }
+                    }
+                ]
+            },
             manifest: {
                 name: 'BoraCorrer - Corrida para Iniciantes',
                 short_name: 'BoraCorrer',
