@@ -1,10 +1,31 @@
 import React from 'react';
-import { getTotalDurationSeconds } from '../data/plans.js';
+import { getTotalDurationSeconds, TOTAL_WEEKS, DAYS_PER_WEEK } from '../data/plans.js';
 import './weekplan.css';
 
 function formatDuration(totalSeconds) {
     const minutes = Math.round(totalSeconds / 60);
     return `${minutes} min`;
+}
+
+function OverallProgress({ completedDays, totalWeeks }) {
+    const totalDays = totalWeeks * DAYS_PER_WEEK;
+    const completedCount = completedDays.length;
+    const percent = Math.round((completedCount / totalDays) * 100);
+
+    return (
+        <div className="overall-progress">
+            <div className="overall-progress-header">
+                <span className="overall-progress-label">🏆 Progresso geral</span>
+                <span className="overall-progress-value">{completedCount}/{totalDays} treinos · {percent}%</span>
+            </div>
+            <div className="overall-progress-bar">
+                <div
+                    className="overall-progress-fill"
+                    style={{ width: `${percent}%` }}
+                />
+            </div>
+        </div>
+    );
 }
 
 export default function WeekPlan({ weekPlan, completedDays, currentWeek, totalWeeks, onStartDay, onChangeWeek }) {
@@ -36,6 +57,8 @@ export default function WeekPlan({ weekPlan, completedDays, currentWeek, totalWe
             <div className="week-progress-label">
                 Semana {currentWeek} de {totalWeeks}
             </div>
+
+            <OverallProgress completedDays={completedDays} totalWeeks={totalWeeks} />
 
             <div className="days-list">
                 {days.map((day) => {
