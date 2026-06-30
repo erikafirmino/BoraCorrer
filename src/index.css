@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -8,36 +10,52 @@ html, body, #root {
     height: 100%;
 }
 
-/* ===== TEMA ESCURO (padrão) ===== */
+/* ===== TEMA ESCURO ===== */
 :root, [data-theme="dark"] {
-    --bg-primary: #0f172a;
-    --bg-secondary: #1e293b;
-    --bg-card: #1e293b;
-    --bg-input: #1e293b;
-    --border-color: #334155;
-    --text-primary: #f1f5f9;
-    --text-secondary: #94a3b8;
-    --text-muted: #64748b;
-    --accent-green: #22c55e;
-    --accent-green-dark: #14532d;
+    --bg-primary: #0a0f1e;
+    --bg-secondary: #111827;
+    --bg-card: #1a2236;
+    --bg-card-hover: #1f2940;
+    --border-color: #2a3650;
+    --text-primary: #f0f4ff;
+    --text-secondary: #8896b3;
+    --text-muted: #4d5f80;
+    --accent: #f97316;
+    --accent-light: #fb923c;
+    --accent-dark: #ea6700;
+    --green: #22c55e;
+    --green-dark: #16a34a;
+    --shadow-card: 0 4px 24px rgba(0,0,0,0.4);
+    --shadow-btn: 0 4px 16px rgba(249,115,22,0.35);
+    --gradient-hero: linear-gradient(135deg, #0a0f1e 0%, #0f1e3d 100%);
+    --gradient-accent: linear-gradient(135deg, #f97316, #f43f5e);
+    --gradient-card: linear-gradient(135deg, #1a2236, #1f2940);
 }
 
 /* ===== TEMA CLARO ===== */
 [data-theme="light"] {
-    --bg-primary: #f8fafc;
-    --bg-secondary: #ffffff;
+    --bg-primary: #f0f4ff;
+    --bg-secondary: #e2e8f8;
     --bg-card: #ffffff;
-    --bg-input: #f1f5f9;
-    --border-color: #e2e8f0;
-    --text-primary: #0f172a;
-    --text-secondary: #475569;
-    --text-muted: #94a3b8;
-    --accent-green: #16a34a;
-    --accent-green-dark: #14532d;
+    --bg-card-hover: #f8faff;
+    --border-color: #dce3f5;
+    --text-primary: #0a0f1e;
+    --text-secondary: #4d5f80;
+    --text-muted: #8896b3;
+    --accent: #f97316;
+    --accent-light: #fb923c;
+    --accent-dark: #ea6700;
+    --green: #16a34a;
+    --green-dark: #15803d;
+    --shadow-card: 0 4px 24px rgba(10,15,30,0.08);
+    --shadow-btn: 0 4px 16px rgba(249,115,22,0.3);
+    --gradient-hero: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+    --gradient-accent: linear-gradient(135deg, #f97316, #f43f5e);
+    --gradient-card: linear-gradient(135deg, #ffffff, #f8faff);
 }
 
 body {
-    font-family: 'Segoe UI', Roboto, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Inter', 'Segoe UI', Roboto, -apple-system, sans-serif;
     background-color: var(--bg-primary);
     color: var(--text-primary);
     -webkit-tap-highlight-color: transparent;
