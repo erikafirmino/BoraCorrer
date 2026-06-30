@@ -1,6 +1,6 @@
 import React from 'react';
 import { useRunTimer } from '../hooks/useRunTimer.js';
-import './Timer.css';
+import './timer.css';
 
 function formatTime(totalSeconds) {
     const minutes = Math.floor(totalSeconds / 60);
