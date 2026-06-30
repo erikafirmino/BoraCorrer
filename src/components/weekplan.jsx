@@ -1,5 +1,7 @@
 import React from 'react';
 import { getTotalDurationSeconds, TOTAL_WEEKS, DAYS_PER_WEEK } from '../data/plans.js';
+import { useStreak } from '../hooks/usestreak.js';
+import { useTheme } from '../hooks/usetheme.js';
 import './weekplan.css';
 
 function formatDuration(totalSeconds) {
@@ -16,7 +18,9 @@ function OverallProgress({ completedDays, totalWeeks }) {
         <div className="overall-progress">
             <div className="overall-progress-header">
                 <span className="overall-progress-label">🏆 Progresso geral</span>
-                <span className="overall-progress-value">{completedCount}/{totalDays} treinos · {percent}%</span>
+                <span className="overall-progress-value">
+                    {completedCount}/{totalDays} treinos · {percent}%
+                </span>
             </div>
             <div className="overall-progress-bar">
                 <div
@@ -28,11 +32,29 @@ function OverallProgress({ completedDays, totalWeeks }) {
     );
 }
 
-export default function WeekPlan({ weekPlan, completedDays, currentWeek, totalWeeks, onStartDay, onChangeWeek }) {
+export default function WeekPlan({
+    weekPlan,
+    completedDays,
+    currentWeek,
+    totalWeeks,
+    onStartDay,
+    onChangeWeek
+}) {
     const days = [1, 2, 3];
+    const { streak } = useStreak(completedDays);
+    const { isDark, toggleTheme } = useTheme();
 
     return (
         <div className="weekplan-container">
+            <div className="weekplan-topbar">
+                <div className="streak-badge">
+                    🔥 {streak} {streak === 1 ? 'dia seguido' : 'dias seguidos'}
+                </div>
+                <button className="theme-toggle" onClick={toggleTheme}>
+                    {isDark ? '☀️' : '🌙'}
+                </button>
+            </div>
+
             <header className="weekplan-header">
                 <button
                     className="week-nav-btn"
