@@ -93,7 +93,7 @@ export default function App() {
     }
 
     if (view === 'timer' && activeDayKey) {
-        const [week] = activeDayKey.split('-');
+        const [week, day] = activeDayKey.split('-');
         const weekPlan = getWeekPlan(Number(week));
 
         return (
@@ -102,6 +102,8 @@ export default function App() {
                     workout={weekPlan.workout}
                     onWorkoutComplete={handleWorkoutComplete}
                     onExit={handleExitTimer}
+                    weekNumber={Number(week)}
+                    dayNumber={Number(day)}
                 />
             </div>
         );
