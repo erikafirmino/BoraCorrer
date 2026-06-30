@@ -1,6 +1,6 @@
 import React from 'react';
 import { getTotalDurationSeconds } from '../data/plans.js';
-import './WeekPlan.css';
+import './weekplan.css';
 
 function formatDuration(totalSeconds) {
     const minutes = Math.round(totalSeconds / 60);
