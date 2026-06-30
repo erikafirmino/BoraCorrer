@@ -14,10 +14,26 @@ function formatDistance(distanceKm) {
 }
 
 function estimateCalories(durationSeconds, distanceKm) {
-    // Estimativa simples: ~60 kcal por km corrido + 4 kcal/min de caminhada
     const minutes = durationSeconds / 60;
-    const base = Math.round(distanceKm * 60 + minutes * 4);
-    return base;
+    return Math.round(distanceKm * 60 + minutes * 4);
+}
+
+function shareWorkout({ totalSeconds, distanceKm, weekNumber, dayNumber }) {
+    const text =
+        `🏃 Treino concluído no BoraCorrer!\n` +
+        `📅 Semana ${weekNumber} · Dia ${dayNumber}\n` +
+        `⏱️ Duração: ${formatTime(totalSeconds)}\n` +
+        `📍 Distância: ${formatDistance(distanceKm)} km\n` +
+        `🔥 Calorias: ~${estimateCalories(totalSeconds, distanceKm)} kcal\n\n` +
+        `Baixe o app: https://bora-correr-mu.vercel.app`;
+
+    if (navigator.share) {
+        navigator.share({ title: 'BoraCorrer - Treino Concluído', text });
+    } else {
+        navigator.clipboard.writeText(text).then(() => {
+            alert('Resumo copiado para a área de transferência!');
+        });
+    }
 }
 
 export default function Summary({ totalSeconds, distanceKm, route, weekNumber, dayNumber, onExit }) {
@@ -55,6 +71,13 @@ export default function Summary({ totalSeconds, distanceKm, route, weekNumber, d
                     <RunMap route={route} />
                 </div>
             )}
+
+            <button
+                className="btn-share"
+                onClick={() => shareWorkout({ totalSeconds, distanceKm, weekNumber, dayNumber })}
+            >
+                📤 Compartilhar treino
+            </button>
 
             <button className="btn-primary btn-full" onClick={onExit}>
                 Voltar para a rotina
