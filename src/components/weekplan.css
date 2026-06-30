@@ -1,9 +1,37 @@
 .weekplan-container {
     height: 100%;
-    padding: 24px 20px;
+    padding: 16px 20px 24px;
     display: flex;
     flex-direction: column;
     overflow-y: auto;
+}
+
+.weekplan-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.streak-badge {
+    background: #1e293b;
+    color: #f97316;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid #f9731633;
+}
+
+.theme-toggle {
+    background: #1e293b;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .weekplan-header {
