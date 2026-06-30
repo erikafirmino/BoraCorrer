@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useRunTimer } from '../hooks/useRunTimer.js';
 import { useGeoTracking } from '../hooks/useGeoTracking.js';
 import RunMap from './runmap.jsx';
@@ -12,6 +12,49 @@ function formatTime(totalSeconds) {
 
 function formatDistance(distanceKm) {
     return distanceKm.toFixed(2).replace('.', ',');
+}
+
+function useWakeLock(isActive) {
+    const wakeLockRef = useRef(null);
+
+    useEffect(() => {
+        if (!('wakeLock' in navigator)) return;
+
+        async function requestWakeLock() {
+            try {
+                wakeLockRef.current = await navigator.wakeLock.request('screen');
+            } catch (err) {
+                console.warn('Wake Lock não disponível:', err);
+            }
+        }
+
+        async function releaseWakeLock() {
+            if (wakeLockRef.current) {
+                await wakeLockRef.current.release();
+                wakeLockRef.current = null;
+            }
+        }
+
+        if (isActive) {
+            requestWakeLock();
+        } else {
+            releaseWakeLock();
+        }
+
+        // Reativa o wake lock se o usuário voltar para a aba após minimizar
+        function handleVisibilityChange() {
+            if (document.visibilityState === 'visible' && isActive) {
+                requestWakeLock();
+            }
+        }
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            releaseWakeLock();
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [isActive]);
 }
 
 export default function Timer({ workout, onWorkoutComplete, onExit }) {
@@ -34,6 +77,9 @@ export default function Timer({ workout, onWorkoutComplete, onExit }) {
         stopTracking,
         resetTracking
     } = useGeoTracking();
+
+    // Mantém a tela ligada enquanto o treino está rodando
+    useWakeLock(isRunning);
 
     useEffect(() => {
         if (isRunning) {
