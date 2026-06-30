@@ -1,0 +1,65 @@
+.onboarding-container {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: radial-gradient(circle at top, #1e3a8a 0%, #0f172a 70%);
+}
+
+.onboarding-content {
+    text-align: center;
+    max-width: 360px;
+    width: 100%;
+}
+
+.onboarding-icon {
+    font-size: 56px;
+    margin-bottom: 16px;
+}
+
+.onboarding-content h1 {
+    font-size: 28px;
+    margin-bottom: 8px;
+}
+
+.onboarding-content p {
+    color: #cbd5e1;
+    margin-bottom: 32px;
+    font-size: 15px;
+}
+
+.onboarding-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.onboarding-form label {
+    text-align: left;
+    font-size: 13px;
+    color: #94a3b8;
+}
+
+.onboarding-form input {
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #f1f5f9;
+    padding: 14px 16px;
+    border-radius: 12px;
+    font-size: 15px;
+    margin-bottom: 12px;
+}
+
+.onboarding-form .btn-primary {
+    background: #22c55e;
+    color: #0f172a;
+    padding: 16px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.onboarding-form .btn-primary:disabled {
+    opacity: 0.4;
+}
