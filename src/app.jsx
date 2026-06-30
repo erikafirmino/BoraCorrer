@@ -4,43 +4,30 @@ import WeekPlan from './components/weekplan.jsx';
 import Timer from './components/timer.jsx';
 import { getWeekPlan, TOTAL_WEEKS } from './data/plans.js';
 import { saveCompletedWorkout } from './services/api.js';
+import { useAuth } from './hooks/useauth.js';
 import { useStreak } from './hooks/usestreak.js';
 import './app.css';
 
-const STORAGE_KEY = 'boracorrer-state';
-const ALL_USERS_KEY = 'boracorrer-users';
+function getUserStorageKey(uid) {
+    return `boracorrer-state-${uid}`;
+}
 
-function loadState(userName) {
+function loadUserState(uid) {
     try {
-        const all = JSON.parse(localStorage.getItem(ALL_USERS_KEY) || '{}');
-        return all[userName] || null;
+        const raw = localStorage.getItem(getUserStorageKey(uid));
+        return raw ? JSON.parse(raw) : null;
     } catch {
         return null;
     }
 }
 
-function saveState(userName, state) {
-    try {
-        const all = JSON.parse(localStorage.getItem(ALL_USERS_KEY) || '{}');
-        all[userName] = state;
-        localStorage.setItem(ALL_USERS_KEY, JSON.stringify(all));
-        // Salva o último usuário ativo
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ lastUser: userName }));
-    } catch {}
-}
-
-function getLastUser() {
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return null;
-        return JSON.parse(raw).lastUser || null;
-    } catch {
-        return null;
-    }
+function saveUserState(uid, state) {
+    localStorage.setItem(getUserStorageKey(uid), JSON.stringify(state));
 }
 
 export default function App() {
-    const [userName, setUserName] = useState(null);
+    const { user, loading: authLoading, logout } = useAuth();
+
     const [currentWeek, setCurrentWeek] = useState(1);
     const [completedDays, setCompletedDays] = useState([]);
     const [activeDayKey, setActiveDayKey] = useState(null);
@@ -48,43 +35,27 @@ export default function App() {
 
     const { registerToday } = useStreak(completedDays);
 
-    // Carrega o último usuário ao iniciar
+    // Carrega estado do usuário logado
     useEffect(() => {
-        const lastUser = getLastUser();
-        if (lastUser) {
-            const saved = loadState(lastUser);
-            setUserName(lastUser);
+        if (authLoading) return;
+
+        if (user) {
+            const saved = loadUserState(user.uid);
             setCurrentWeek(saved?.currentWeek || 1);
             setCompletedDays(saved?.completedDays || []);
             setView('plan');
         } else {
+            setCurrentWeek(1);
+            setCompletedDays([]);
             setView('onboarding');
         }
-    }, []);
+    }, [user, authLoading]);
 
-    // Persiste o estado do usuário atual
+    // Persiste estado do usuário
     useEffect(() => {
-        if (view === 'loading' || !userName) return;
-        saveState(userName, { currentWeek, completedDays });
-    }, [userName, currentWeek, completedDays, view]);
-
-    const handleOnboardingComplete = useCallback((name) => {
-        const saved = loadState(name);
-        setUserName(name);
-        setCurrentWeek(saved?.currentWeek || 1);
-        setCompletedDays(saved?.completedDays || []);
-        setView('plan');
-    }, []);
-
-    // Troca de usuário sem apagar dados
-    const handleSwitchUser = useCallback(() => {
-        localStorage.removeItem(STORAGE_KEY);
-        setUserName(null);
-        setCurrentWeek(1);
-        setCompletedDays([]);
-        setActiveDayKey(null);
-        setView('onboarding');
-    }, []);
+        if (!user || view === 'loading') return;
+        saveUserState(user.uid, { currentWeek, completedDays });
+    }, [user, currentWeek, completedDays, view]);
 
     const handleStartDay = useCallback((dayKey) => {
         setActiveDayKey(dayKey);
@@ -92,7 +63,7 @@ export default function App() {
     }, []);
 
     const handleWorkoutComplete = useCallback(async () => {
-        if (!activeDayKey) return;
+        if (!activeDayKey || !user) return;
 
         setCompletedDays((prev) => {
             if (prev.includes(activeDayKey)) return prev;
@@ -104,26 +75,30 @@ export default function App() {
         const [week, day] = activeDayKey.split('-');
 
         await saveCompletedWorkout({
-            userName,
+            userName: user.displayName || user.email,
             week: Number(week),
             day: Number(day),
             completedAt: new Date().toISOString()
         });
-    }, [activeDayKey, userName, registerToday]);
+    }, [activeDayKey, user, registerToday]);
 
     const handleExitTimer = useCallback(() => {
         setActiveDayKey(null);
         setView('plan');
     }, []);
 
-    if (view === 'loading') {
-        return <div className="app-shell" />;
+    if (authLoading || view === 'loading') {
+        return (
+            <div className="app-shell app-loading">
+                <img src="/icons/192.png" alt="BoraCorrer" className="loading-logo" />
+            </div>
+        );
     }
 
-    if (view === 'onboarding') {
+    if (!user) {
         return (
             <div className="app-shell">
-                <Onboarding onComplete={handleOnboardingComplete} />
+                <Onboarding onComplete={() => {}} />
             </div>
         );
     }
@@ -156,8 +131,8 @@ export default function App() {
                 totalWeeks={TOTAL_WEEKS}
                 onStartDay={handleStartDay}
                 onChangeWeek={setCurrentWeek}
-                userName={userName}
-                onSwitchUser={handleSwitchUser}
+                userName={user.displayName || user.email}
+                onSwitchUser={logout}
             />
         </div>
     );
