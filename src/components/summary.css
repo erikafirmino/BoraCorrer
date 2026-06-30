@@ -63,6 +63,17 @@
     overflow: hidden;
 }
 
+.btn-share {
+    width: 100%;
+    padding: 14px;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 600;
+    background: #1e293b;
+    color: #f1f5f9;
+    border: 1px solid #334155;
+}
+
 .btn-full {
     width: 100%;
     padding: 16px;
