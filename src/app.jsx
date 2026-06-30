@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import Onboarding from './components/Onboarding.jsx';
-import WeekPlan from './components/WeekPlan.jsx';
-import Timer from './components/Timer.jsx';
+import Onboarding from './components/onboarding.jsx';
+import WeekPlan from './components/weekplan.jsx';
+import Timer from './components/timer.jsx';
 import { getWeekPlan, TOTAL_WEEKS } from './data/plans.js';
 import { saveCompletedWorkout } from './services/api.js';
-import './App.css';
+import './app.css';
 
 const STORAGE_KEY = 'boracorrer-state';
 
