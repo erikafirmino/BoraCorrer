@@ -31,13 +31,35 @@ function vibrate(pattern) {
     }
 }
 
-function notifyTransition(blockType) {
+// Voz falada na transição usando Web Speech API
+function speak(text) {
+    try {
+        if (!window.speechSynthesis) return;
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'pt-BR';
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+        window.speechSynthesis.speak(utterance);
+    } catch (err) {
+        console.warn('Web Speech API não suportada:', err);
+    }
+}
+
+function notifyTransition(blockType, label) {
     if (blockType === 'run') {
         playBeep(1000, 300);
         vibrate([200, 100, 200]);
+        speak(label === 'Aquecimento' ? 'Hora de aquecer!' : 'Hora de correr!');
+    } else if (label === 'Desaquecimento') {
+        playBeep(500, 300);
+        vibrate([400]);
+        speak('Hora do desaquecimento!');
     } else {
         playBeep(500, 300);
         vibrate([400]);
+        speak('Hora de caminhar!');
     }
 }
 
@@ -46,9 +68,11 @@ export function useRunTimer(workout, onComplete) {
     const [secondsLeft, setSecondsLeft] = useState(workout[0]?.seconds || 0);
     const [isRunning, setIsRunning] = useState(false);
     const [isFinished, setIsFinished] = useState(false);
+    const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
     const intervalRef = useRef(null);
     const hasNotifiedRef = useRef(false);
+    const startTimeRef = useRef(null);
 
     const currentBlock = workout[blockIndex];
 
@@ -57,13 +81,18 @@ export function useRunTimer(workout, onComplete) {
         setSecondsLeft(workout[0]?.seconds || 0);
         setIsRunning(false);
         setIsFinished(false);
+        setElapsedSeconds(0);
         hasNotifiedRef.current = false;
+        startTimeRef.current = null;
     }, [workout]);
 
     const start = useCallback(() => {
         if (!hasNotifiedRef.current) {
-            notifyTransition(workout[0]?.type);
+            notifyTransition(workout[0]?.type, workout[0]?.label);
             hasNotifiedRef.current = true;
+        }
+        if (!startTimeRef.current) {
+            startTimeRef.current = Date.now();
         }
         setIsRunning(true);
     }, [workout]);
@@ -79,6 +108,7 @@ export function useRunTimer(workout, onComplete) {
         }
 
         intervalRef.current = setInterval(() => {
+            setElapsedSeconds((prev) => prev + 1);
             setSecondsLeft((prevSeconds) => {
                 if (prevSeconds <= 1) {
                     setBlockIndex((prevIndex) => {
@@ -89,11 +119,12 @@ export function useRunTimer(workout, onComplete) {
                             setIsFinished(true);
                             playBeep(1200, 500);
                             vibrate([300, 100, 300, 100, 300]);
+                            speak('Treino concluído! Parabéns!');
                             if (onComplete) onComplete();
                             return prevIndex;
                         }
 
-                        notifyTransition(workout[nextIndex].type);
+                        notifyTransition(workout[nextIndex].type, workout[nextIndex].label);
                         setSecondsLeft(workout[nextIndex].seconds);
                         return nextIndex;
                     });
@@ -120,6 +151,8 @@ export function useRunTimer(workout, onComplete) {
         isRunning,
         isFinished,
         progressPercent,
+        elapsedSeconds,
+        totalSeconds,
         start,
         pause,
         reset
