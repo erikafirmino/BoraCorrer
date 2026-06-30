@@ -1,0 +1,120 @@
+.timer-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    position: relative;
+    transition: background-color 0.6s ease;
+}
+
+.timer-container.run-mode {
+    background: linear-gradient(180deg, #166534 0%, #14532d 100%);
+}
+
+.timer-container.walk-mode {
+    background: linear-gradient(180deg, #1e3a8a 0%, #1e293b 100%);
+}
+
+.timer-finished {
+    background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+    text-align: center;
+    gap: 16px;
+}
+
+.finished-icon {
+    font-size: 64px;
+}
+
+.timer-finished h2 {
+    font-size: 24px;
+}
+
+.timer-finished p {
+    color: #cbd5e1;
+}
+
+.btn-exit {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 18px;
+}
+
+.block-label {
+    font-size: 18px;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 8px;
+}
+
+.block-type {
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    margin-bottom: 24px;
+}
+
+.time-display {
+    font-size: 96px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 32px;
+}
+
+.progress-bar-wrapper {
+    width: 100%;
+    max-width: 320px;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 40px;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: #ffffff;
+    transition: width 1s linear;
+}
+
+.controls {
+    display: flex;
+    gap: 16px;
+}
+
+.btn-control {
+    padding: 16px 28px;
+    border-radius: 999px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.btn-start {
+    background: #ffffff;
+    color: #14532d;
+}
+
+.btn-pause {
+    background: #ffffff;
+    color: #1e3a8a;
+}
+
+.btn-reset {
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+}
+
+.btn-primary {
+    background: #22c55e;
+    color: #0f172a;
+    padding: 14px 28px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 16px;
+}
