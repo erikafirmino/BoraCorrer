@@ -8,19 +8,35 @@ import { useStreak } from './hooks/usestreak.js';
 import './app.css';
 
 const STORAGE_KEY = 'boracorrer-state';
+const ALL_USERS_KEY = 'boracorrer-users';
 
-function loadState() {
+function loadState(userName) {
     try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return null;
-        return JSON.parse(raw);
+        const all = JSON.parse(localStorage.getItem(ALL_USERS_KEY) || '{}');
+        return all[userName] || null;
     } catch {
         return null;
     }
 }
 
-function saveState(state) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+function saveState(userName, state) {
+    try {
+        const all = JSON.parse(localStorage.getItem(ALL_USERS_KEY) || '{}');
+        all[userName] = state;
+        localStorage.setItem(ALL_USERS_KEY, JSON.stringify(all));
+        // Salva o último usuário ativo
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ lastUser: userName }));
+    } catch {}
+}
+
+function getLastUser() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw).lastUser || null;
+    } catch {
+        return null;
+    }
 }
 
 export default function App() {
@@ -32,27 +48,42 @@ export default function App() {
 
     const { registerToday } = useStreak(completedDays);
 
+    // Carrega o último usuário ao iniciar
     useEffect(() => {
-        const saved = loadState();
-        if (saved && saved.userName) {
-            setUserName(saved.userName);
-            setCurrentWeek(saved.currentWeek || 1);
-            setCompletedDays(saved.completedDays || []);
+        const lastUser = getLastUser();
+        if (lastUser) {
+            const saved = loadState(lastUser);
+            setUserName(lastUser);
+            setCurrentWeek(saved?.currentWeek || 1);
+            setCompletedDays(saved?.completedDays || []);
             setView('plan');
         } else {
             setView('onboarding');
         }
     }, []);
 
+    // Persiste o estado do usuário atual
     useEffect(() => {
-        if (view === 'loading') return;
-        if (!userName) return;
-        saveState({ userName, currentWeek, completedDays });
+        if (view === 'loading' || !userName) return;
+        saveState(userName, { currentWeek, completedDays });
     }, [userName, currentWeek, completedDays, view]);
 
     const handleOnboardingComplete = useCallback((name) => {
+        const saved = loadState(name);
         setUserName(name);
+        setCurrentWeek(saved?.currentWeek || 1);
+        setCompletedDays(saved?.completedDays || []);
         setView('plan');
+    }, []);
+
+    // Troca de usuário sem apagar dados
+    const handleSwitchUser = useCallback(() => {
+        localStorage.removeItem(STORAGE_KEY);
+        setUserName(null);
+        setCurrentWeek(1);
+        setCompletedDays([]);
+        setActiveDayKey(null);
+        setView('onboarding');
     }, []);
 
     const handleStartDay = useCallback((dayKey) => {
@@ -78,7 +109,7 @@ export default function App() {
             day: Number(day),
             completedAt: new Date().toISOString()
         });
-    }, [activeDayKey, userName]);
+    }, [activeDayKey, userName, registerToday]);
 
     const handleExitTimer = useCallback(() => {
         setActiveDayKey(null);
@@ -125,6 +156,8 @@ export default function App() {
                 totalWeeks={TOTAL_WEEKS}
                 onStartDay={handleStartDay}
                 onChangeWeek={setCurrentWeek}
+                userName={userName}
+                onSwitchUser={handleSwitchUser}
             />
         </div>
     );
