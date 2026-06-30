@@ -39,10 +39,17 @@
     font-size: 14px;
 }
 
-.btn-exit {
+.timer-top-row {
     position: absolute;
     top: 20px;
+    left: 20px;
     right: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.btn-exit {
     background: rgba(255,255,255,0.1);
     color: #fff;
     width: 40px;
@@ -51,6 +58,26 @@
     font-size: 16px;
     border: 1px solid rgba(255,255,255,0.15);
     backdrop-filter: blur(8px);
+}
+
+.btn-pip {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 20px;
+    border: 1px solid rgba(255,255,255,0.15);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.btn-pip.pip-active {
+    background: rgba(249,115,22,0.3);
+    border-color: rgba(249,115,22,0.5);
 }
 
 .block-label {
