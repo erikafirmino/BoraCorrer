@@ -59,20 +59,25 @@ export default function App() {
         }
 
         async function loadProgress() {
-            const cloud = await loadProgressFromCloud(user.uid);
+            // Carrega local primeiro para evitar tela em branco
+            const local = loadLocal(user.uid);
+            if (local) {
+                setCurrentWeek(local.currentWeek || 1);
+                setCompletedDays(local.completedDays || []);
+                setUserProfile(local.profile || null);
+                setView(local.profile ? 'plan' : 'setup');
+            }
 
+            // Sincroniza com nuvem em background
+            const cloud = await loadProgressFromCloud(user.uid);
             if (cloud) {
                 setCurrentWeek(cloud.currentWeek || 1);
                 setCompletedDays(cloud.completedDays || []);
                 setUserProfile(cloud.profile || null);
                 saveLocal(user.uid, cloud);
                 setView(cloud.profile ? 'plan' : 'setup');
-            } else {
-                const local = loadLocal(user.uid);
-                setCurrentWeek(local?.currentWeek || 1);
-                setCompletedDays(local?.completedDays || []);
-                setUserProfile(local?.profile || null);
-                setView(local?.profile ? 'plan' : 'setup');
+            } else if (!local) {
+                setView('setup');
             }
         }
 
