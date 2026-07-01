@@ -42,8 +42,10 @@ export default function WeekPlan({
     completedDays,
     currentWeek,
     totalWeeks,
+    currentPlanId,
     onStartDay,
     onChangeWeek,
+    onOpenModeSelect,
     userName,
     onSwitchUser,
     userProfile,
@@ -107,7 +109,7 @@ export default function WeekPlan({
                     </button>
                 </div>
 
-                {motivationalMsg && (
+            {motivationalMsg && (
                     <div className="motivational-msg">
                         💡 {motivationalMsg}
                     </div>
@@ -133,6 +135,15 @@ export default function WeekPlan({
 
             {/* BODY */}
             <div className="weekplan-body">
+                <div className="plan-mode-row">
+                    <div className="plan-mode-badge">
+                        {currentPlanId === '5k' ? '🏃 Plano 5K' : '🏆 Plano 10K'}
+                    </div>
+                    <button className="plan-mode-btn" onClick={onOpenModeSelect}>
+                        Trocar treino ›
+                    </button>
+                </div>
+
                 <div className="week-progress-label">
                     Semana {currentWeek} de {totalWeeks}
                 </div>
