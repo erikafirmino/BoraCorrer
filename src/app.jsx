@@ -1,81 +1,142 @@
+// ============================================================
+// app.jsx
+// Componente raiz do BoraCorrer.
+//
+// Estratégia de dados:
+//   - Firestore é a FONTE PRIMÁRIA (dados persistem após limpar cache)
+//   - localStorage é apenas CACHE de performance (dados offline/rápidos)
+//   - Ao logar: busca Firestore em background enquanto mostra loading
+//   - Ao salvar: persiste sempre no Firestore + atualiza cache local
+// ============================================================
+
 import React, { useState, useEffect, useCallback } from 'react';
-import Onboarding from './components/onboarding.jsx';
-import WeekPlan from './components/weekplan.jsx';
-import Timer from './components/timer.jsx';
-import ProfileSetup from './components/profilesetup.jsx';
-import ModeSelect from './components/modeselect.jsx';
-import FreeRun from './components/freelrun.jsx';
-import { getWeekPlan, TOTAL_WEEKS } from './data/plans.js';
-import { saveCompletedWorkout } from './services/api.js';
+import Onboarding    from './components/onboarding.jsx';
+import WeekPlan      from './components/weekplan.jsx';
+import Timer         from './components/timer.jsx';
+import ProfileSetup  from './components/profilesetup.jsx';
+import ModeSelect    from './components/modeselect.jsx';
+import FreeRun       from './components/freelrun.jsx';
+import { getWeekPlan, TOTAL_WEEKS }    from './data/plans.js';
+import { saveCompletedWorkout }        from './services/api.js';
 import {
     loadProgressFromCloud,
     saveProgressToCloud,
     saveWorkoutToCloud,
     saveUserProfile
 } from './services/firestore.js';
-import { useAuth } from './hooks/useauth.js';
+import { useAuth }   from './hooks/useauth.js';
 import { useStreak } from './hooks/usestreak.js';
 import './app.css';
 
-function getLocalKey(uid) { return `boracorrer-state-${uid}`; }
-function loadLocal(uid) {
-    try { return JSON.parse(localStorage.getItem(getLocalKey(uid))); } catch { return null; }
+// ============================================================
+// Helpers de cache local (localStorage)
+// ============================================================
+
+function getCacheKey(uid) {
+    return `boracorrer-cache-${uid}`;
 }
-function saveLocal(uid, state) {
-    localStorage.setItem(getLocalKey(uid), JSON.stringify(state));
+
+function readCache(uid) {
+    try {
+        const raw = localStorage.getItem(getCacheKey(uid));
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        return null;
+    }
 }
+
+function writeCache(uid, state) {
+    try {
+        localStorage.setItem(getCacheKey(uid), JSON.stringify(state));
+    } catch {
+        // localStorage indisponível (modo privado, storage cheio) — ignora silenciosamente
+    }
+}
+
+function clearCache(uid) {
+    try {
+        localStorage.removeItem(getCacheKey(uid));
+    } catch {}
+}
+
+// ============================================================
+// Hook: status de conexão
+// ============================================================
 
 function useOnlineStatus() {
     const [online, setOnline] = useState(navigator.onLine);
+
     useEffect(() => {
-        const on = () => setOnline(true);
-        const off = () => setOnline(false);
-        window.addEventListener('online', on);
-        window.addEventListener('offline', off);
-        return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
+        const handleOnline  = () => setOnline(true);
+        const handleOffline = () => setOnline(false);
+
+        window.addEventListener('online',  handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        return () => {
+            window.removeEventListener('online',  handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
     }, []);
+
     return online;
 }
+
+// ============================================================
+// App
+// ============================================================
 
 export default function App() {
     const { user, loading: authLoading, logout, updateUserProfile } = useAuth();
     const isOnline = useOnlineStatus();
 
-    const [currentWeek, setCurrentWeek] = useState(1);
-    const [completedDays, setCompletedDays] = useState([]);
-    const [userProfile, setUserProfile] = useState(null);
-    const [activeDayKey, setActiveDayKey] = useState(null);
-    const [currentPlanId, setCurrentPlanId] = useState('5k');
-    const [freeWorkout, setFreeWorkout] = useState(null); // { workout, title }
+    const [currentWeek,    setCurrentWeek]    = useState(1);
+    const [completedDays,  setCompletedDays]  = useState([]);
+    const [userProfile,    setUserProfile]    = useState(null);
+    const [currentPlanId,  setCurrentPlanId]  = useState('5k');
+    const [activeDayKey,   setActiveDayKey]   = useState(null);
+    const [freeWorkout,    setFreeWorkout]    = useState(null);
     const [showModeSelect, setShowModeSelect] = useState(false);
-    const [showFreeRun, setShowFreeRun] = useState(null); // null | { workout?, title? }
+    const [showFreeRun,    setShowFreeRun]    = useState(null);
+
+    // 'loading' → 'onboarding' | 'setup' | 'plan' | 'timer'
     const [view, setView] = useState('loading');
 
     const { registerToday } = useStreak(completedDays);
 
+    // ----------------------------------------------------------
+    // Carrega o progresso do usuário ao autenticar
+    // ----------------------------------------------------------
     useEffect(() => {
         if (authLoading) return;
-        if (!user) { setView('onboarding'); return; }
+
+        if (!user) {
+            setView('onboarding');
+            return;
+        }
 
         async function loadProgress() {
-            const local = loadLocal(user.uid);
-            if (local) {
-                setCurrentWeek(local.currentWeek || 1);
-                setCompletedDays(local.completedDays || []);
-                setUserProfile(local.profile || null);
-                setCurrentPlanId(local.planId || '5k');
-                setView(local.profile ? 'plan' : 'setup');
+            // 1. Tenta o cache local para resposta imediata
+            const cached = readCache(user.uid);
+
+            if (cached) {
+                applyState(cached);
+                setView(cached.profile ? 'plan' : 'setup');
+            } else {
+                // Sem cache: mantém 'loading' até o Firestore responder
+                setView('loading');
             }
 
+            // 2. Sempre busca o Firestore (fonte primária)
+            //    — sobrescreve o cache se os dados da nuvem forem mais recentes
             const cloud = await loadProgressFromCloud(user.uid);
+
             if (cloud) {
-                setCurrentWeek(cloud.currentWeek || 1);
-                setCompletedDays(cloud.completedDays || []);
-                setUserProfile(cloud.profile || null);
-                setCurrentPlanId(cloud.planId || '5k');
-                saveLocal(user.uid, cloud);
+                applyState(cloud);
+                writeCache(user.uid, cloud); // atualiza o cache com dados da nuvem
                 setView(cloud.profile ? 'plan' : 'setup');
-            } else if (!local) {
+            } else if (!cached) {
+                // Usuário novo: sem cache e sem dados na nuvem
                 setView('setup');
             }
         }
@@ -83,24 +144,59 @@ export default function App() {
         loadProgress();
     }, [user, authLoading]);
 
+    /** Aplica um objeto de estado nos state hooks */
+    function applyState(state) {
+        setCurrentWeek(state.currentWeek   ?? 1);
+        setCompletedDays(state.completedDays ?? []);
+        setUserProfile(state.profile         ?? null);
+        setCurrentPlanId(state.planId        ?? '5k');
+    }
+
+    // ----------------------------------------------------------
+    // Persiste progresso sempre que o estado muda
+    // Firestore é a fonte primária; localStorage é só cache.
+    // ----------------------------------------------------------
     useEffect(() => {
         if (!user || ['loading', 'onboarding', 'setup'].includes(view)) return;
-        const state = { currentWeek, completedDays, profile: userProfile, planId: currentPlanId };
-        saveLocal(user.uid, state);
-        if (isOnline) saveProgressToCloud(user.uid, state);
-    }, [user, currentWeek, completedDays, userProfile, currentPlanId, view, isOnline]);
+
+        const state = {
+            currentWeek,
+            completedDays,
+            profile:  userProfile,
+            planId:   currentPlanId
+        };
+
+        // Atualiza cache local imediatamente
+        writeCache(user.uid, state);
+
+        // Persiste na nuvem (Firestore) — sempre, não apenas quando online,
+        // pois o Firestore SDK faz queue offline automaticamente
+        saveProgressToCloud(user.uid, state);
+
+    }, [user, currentWeek, completedDays, userProfile, currentPlanId, view]);
+
+    // ----------------------------------------------------------
+    // Handlers
+    // ----------------------------------------------------------
 
     const handleProfileComplete = useCallback(async (profile) => {
+        const initialState = {
+            currentWeek:   1,
+            completedDays: [],
+            profile,
+            planId:        '5k'
+        };
+
         setUserProfile(profile);
-        setView('plan'); // Muda a view ANTES de salvar na nuvem
+        setView('plan'); // navega imediatamente, sem esperar a nuvem
+
         if (user) {
-            saveLocal(user.uid, {
-                currentWeek: 1,
-                completedDays: [],
-                profile,
-                planId: '5k'
-            });
-            saveUserProfile(user.uid, profile).catch(console.warn);
+            writeCache(user.uid, initialState);
+            // Salva perfil E progresso inicial no Firestore em paralelo
+            await Promise.all([
+                saveUserProfile(user.uid, profile),
+                saveProgressToCloud(user.uid, initialState)
+            ]).catch(console.warn);
         }
     }, [user]);
 
@@ -138,21 +234,23 @@ export default function App() {
 
         const [week, day] = activeDayKey ? activeDayKey.split('-') : [0, 0];
 
+        // Salva treino no histórico Firestore
         await saveWorkoutToCloud(user.uid, {
-            week: Number(week),
-            day: Number(day),
-            planId: currentPlanId,
-            title: freeWorkout?.title || null,
-            completedAt: new Date().toISOString(),
-            distanceKm: stats?.distanceKm || 0,
+            week:            Number(week),
+            day:             Number(day),
+            planId:          currentPlanId,
+            title:           freeWorkout?.title || null,
+            completedAt:     new Date().toISOString(),
+            distanceKm:      stats?.distanceKm      || 0,
             durationSeconds: stats?.durationSeconds || 0
         });
 
+        // Salva também no Google Sheets (histórico legado)
         if (activeDayKey) {
             await saveCompletedWorkout({
-                userName: user.displayName || user.email,
-                week: Number(week),
-                day: Number(day),
+                userName:    user.displayName || user.email,
+                week:        Number(week),
+                day:         Number(day),
                 completedAt: new Date().toISOString()
             });
         }
@@ -164,20 +262,41 @@ export default function App() {
         setView('plan');
     }, []);
 
+    const handleLogout = useCallback(async () => {
+        if (user) clearCache(user.uid); // limpa cache ao sair
+        await logout();
+    }, [user, logout]);
+
+    // ----------------------------------------------------------
+    // Render
+    // ----------------------------------------------------------
+
     if (authLoading || view === 'loading') {
         return (
             <div className="app-shell app-loading">
-                <img src="/icons/192.png" alt="BoraCorrer" className="loading-logo" />
+                <img
+                    src="/icons/192.png"
+                    alt="BoraCorrer"
+                    className="loading-logo"
+                />
             </div>
         );
     }
 
     if (!user || view === 'onboarding') {
-        return <div className="app-shell"><Onboarding onComplete={() => {}} /></div>;
+        return (
+            <div className="app-shell">
+                <Onboarding onComplete={() => {}} />
+            </div>
+        );
     }
 
     if (view === 'setup') {
-        return <div className="app-shell"><ProfileSetup onComplete={handleProfileComplete} /></div>;
+        return (
+            <div className="app-shell">
+                <ProfileSetup onComplete={handleProfileComplete} />
+            </div>
+        );
     }
 
     if (view === 'timer') {
@@ -204,13 +323,19 @@ export default function App() {
         );
     }
 
+    // Vista padrão: plano semanal
     const weekPlan = getWeekPlan(currentWeek, currentPlanId);
 
     return (
         <div className="app-shell">
+
+            {/* Banner offline */}
             {!isOnline && (
-                <div className="offline-banner">📵 Sem conexão — progresso salvo localmente</div>
+                <div className="offline-banner">
+                    📵 Sem conexão — progresso salvo localmente
+                </div>
             )}
+
             <WeekPlan
                 weekPlan={weekPlan}
                 completedDays={completedDays}
@@ -221,7 +346,7 @@ export default function App() {
                 onChangeWeek={setCurrentWeek}
                 onOpenModeSelect={() => setShowModeSelect(true)}
                 userName={user.displayName || user.email}
-                onSwitchUser={logout}
+                onSwitchUser={handleLogout}
                 userProfile={userProfile}
                 user={user}
                 onUpdateName={updateUserProfile}
@@ -251,6 +376,7 @@ export default function App() {
                     onClose={() => setShowFreeRun(null)}
                 />
             )}
+
         </div>
     );
 }
