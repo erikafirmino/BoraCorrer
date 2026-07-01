@@ -3,8 +3,10 @@ import { getTotalDurationSeconds, TOTAL_WEEKS, DAYS_PER_WEEK } from '../data/pla
 import { useStreak } from '../hooks/usestreak.js';
 import { useTheme } from '../hooks/usetheme.js';
 import { usePushNotification } from '../hooks/usepushnotification.js';
+import { useAchievements, getMotivationalPhrase } from '../hooks/useachievements.js';
 import { getPersonalizedMessage } from './profilesetup.jsx';
 import Calendar from './calendar.jsx';
+import ProfileModal from './profilemodal.jsx';
 import './weekplan.css';
 
 function formatDuration(totalSeconds) {
@@ -44,16 +46,22 @@ export default function WeekPlan({
     onChangeWeek,
     userName,
     onSwitchUser,
-    userProfile
+    userProfile,
+    user,
+    onUpdateName
 }) {
     const days = [1, 2, 3];
     const { streak } = useStreak(completedDays);
     const { isDark, toggleTheme } = useTheme();
     const { isSupported, isEnabled, scheduleReminder } = usePushNotification();
+    const achievements = useAchievements(completedDays, streak);
     const [showCalendar, setShowCalendar] = useState(false);
+    const [showProfile, setShowProfile] = useState(false);
 
     const firstName = userName ? userName.split(' ')[0] : '';
-    const motivationalMsg = getPersonalizedMessage(userProfile);
+    const motivationalMsg = completedDays.length > 0
+        ? getMotivationalPhrase(completedDays)
+        : getPersonalizedMessage(userProfile);
 
     return (
         <div className="weekplan-container">
@@ -83,11 +91,19 @@ export default function WeekPlan({
                 </div>
 
                 <div className="user-row">
-                    <div className="user-greeting">
-                        Olá,<br />{firstName}! 👋
-                    </div>
+                    <button className="user-greeting-btn" onClick={() => setShowProfile(true)}>
+                        <div className="user-avatar">
+                            {(firstName || '?')[0].toUpperCase()}
+                        </div>
+                        <div>
+                            <div className="user-greeting">Olá, {firstName}! 👋</div>
+                            <div className="user-sub">
+                                {achievements.unlocked.length} conquista{achievements.unlocked.length !== 1 ? 's' : ''} · ver perfil
+                            </div>
+                        </div>
+                    </button>
                     <button className="switch-user-btn" onClick={onSwitchUser}>
-                        Trocar usuário
+                        Sair
                     </button>
                 </div>
 
@@ -102,9 +118,7 @@ export default function WeekPlan({
                         className="week-nav-btn"
                         disabled={currentWeek <= 1}
                         onClick={() => onChangeWeek(currentWeek - 1)}
-                    >
-                        ‹
-                    </button>
+                    >‹</button>
                     <div className="week-title-block">
                         <h1>{weekPlan.title}</h1>
                         <p>{weekPlan.description}</p>
@@ -113,9 +127,7 @@ export default function WeekPlan({
                         className="week-nav-btn"
                         disabled={currentWeek >= totalWeeks}
                         onClick={() => onChangeWeek(currentWeek + 1)}
-                    >
-                        ›
-                    </button>
+                    >›</button>
                 </header>
             </div>
 
@@ -156,6 +168,15 @@ export default function WeekPlan({
             </div>
 
             {showCalendar && <Calendar onClose={() => setShowCalendar(false)} />}
+
+            {showProfile && (
+                <ProfileModal
+                    user={user}
+                    achievements={achievements}
+                    onSave={onUpdateName}
+                    onClose={() => setShowProfile(false)}
+                />
+            )}
         </div>
     );
 }
