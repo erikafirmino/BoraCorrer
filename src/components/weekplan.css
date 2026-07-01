@@ -184,7 +184,10 @@
 .week-title-block p {
     font-size: 12px;
     color: rgba(255,255,255,0.55);
-    line-height: 1.4;
+    line-height: 1.5;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
 }
 
 /* ===== BODY ===== */
