@@ -112,7 +112,16 @@ function PausedPanel({ currentBlock, nextBlock, onResume, onReset, onExit }) {
     );
 }
 
-export default function Timer({ workout, onWorkoutComplete, onExit, weekNumber, dayNumber }) {
+export default function Timer({
+    workout,
+    onWorkoutComplete,
+    onExit,
+    weekNumber,
+    dayNumber,
+    workoutTitle,
+    completedDays = [],
+    userProfile = null
+}) {
     const {
         currentBlock,
         nextBlock,
@@ -194,6 +203,8 @@ export default function Timer({ workout, onWorkoutComplete, onExit, weekNumber, 
                 weekNumber={weekNumber}
                 dayNumber={dayNumber}
                 workoutTitle={workoutTitle}
+                completedDays={completedDays}
+                userProfile={userProfile}
                 onExit={onExit}
             />
         );
