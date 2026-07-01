@@ -2,67 +2,106 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Onboarding from './components/onboarding.jsx';
 import WeekPlan from './components/weekplan.jsx';
 import Timer from './components/timer.jsx';
+import ProfileSetup from './components/profilesetup.jsx';
 import { getWeekPlan, TOTAL_WEEKS } from './data/plans.js';
 import { saveCompletedWorkout } from './services/api.js';
+import {
+    loadProgressFromCloud,
+    saveProgressToCloud,
+    saveWorkoutToCloud,
+    saveUserProfile
+} from './services/firestore.js';
 import { useAuth } from './hooks/useauth.js';
 import { useStreak } from './hooks/usestreak.js';
 import './app.css';
 
-function getUserStorageKey(uid) {
-    return `boracorrer-state-${uid}`;
+function getLocalKey(uid) { return `boracorrer-state-${uid}`; }
+function loadLocal(uid) {
+    try { return JSON.parse(localStorage.getItem(getLocalKey(uid))); } catch { return null; }
+}
+function saveLocal(uid, state) {
+    localStorage.setItem(getLocalKey(uid), JSON.stringify(state));
 }
 
-function loadUserState(uid) {
-    try {
-        const raw = localStorage.getItem(getUserStorageKey(uid));
-        return raw ? JSON.parse(raw) : null;
-    } catch {
-        return null;
-    }
-}
-
-function saveUserState(uid, state) {
-    localStorage.setItem(getUserStorageKey(uid), JSON.stringify(state));
+function useOnlineStatus() {
+    const [online, setOnline] = useState(navigator.onLine);
+    useEffect(() => {
+        const on = () => setOnline(true);
+        const off = () => setOnline(false);
+        window.addEventListener('online', on);
+        window.addEventListener('offline', off);
+        return () => {
+            window.removeEventListener('online', on);
+            window.removeEventListener('offline', off);
+        };
+    }, []);
+    return online;
 }
 
 export default function App() {
     const { user, loading: authLoading, logout } = useAuth();
+    const isOnline = useOnlineStatus();
 
     const [currentWeek, setCurrentWeek] = useState(1);
     const [completedDays, setCompletedDays] = useState([]);
+    const [userProfile, setUserProfile] = useState(null);
     const [activeDayKey, setActiveDayKey] = useState(null);
     const [view, setView] = useState('loading');
 
     const { registerToday } = useStreak(completedDays);
 
-    // Carrega estado do usuário logado
     useEffect(() => {
         if (authLoading) return;
 
-        if (user) {
-            const saved = loadUserState(user.uid);
-            setCurrentWeek(saved?.currentWeek || 1);
-            setCompletedDays(saved?.completedDays || []);
-            setView('plan');
-        } else {
-            setCurrentWeek(1);
-            setCompletedDays([]);
+        if (!user) {
             setView('onboarding');
+            return;
         }
+
+        async function loadProgress() {
+            const cloud = await loadProgressFromCloud(user.uid);
+
+            if (cloud) {
+                setCurrentWeek(cloud.currentWeek || 1);
+                setCompletedDays(cloud.completedDays || []);
+                setUserProfile(cloud.profile || null);
+                saveLocal(user.uid, cloud);
+                setView(cloud.profile ? 'plan' : 'setup');
+            } else {
+                const local = loadLocal(user.uid);
+                setCurrentWeek(local?.currentWeek || 1);
+                setCompletedDays(local?.completedDays || []);
+                setUserProfile(local?.profile || null);
+                setView(local?.profile ? 'plan' : 'setup');
+            }
+        }
+
+        loadProgress();
     }, [user, authLoading]);
 
-    // Persiste estado do usuário
     useEffect(() => {
-        if (!user || view === 'loading') return;
-        saveUserState(user.uid, { currentWeek, completedDays });
-    }, [user, currentWeek, completedDays, view]);
+        if (!user || ['loading', 'onboarding', 'setup'].includes(view)) return;
+
+        const state = { currentWeek, completedDays, profile: userProfile };
+        saveLocal(user.uid, state);
+
+        if (isOnline) {
+            saveProgressToCloud(user.uid, state);
+        }
+    }, [user, currentWeek, completedDays, userProfile, view, isOnline]);
+
+    const handleProfileComplete = useCallback(async (profile) => {
+        setUserProfile(profile);
+        if (user) await saveUserProfile(user.uid, profile);
+        setView('plan');
+    }, [user]);
 
     const handleStartDay = useCallback((dayKey) => {
         setActiveDayKey(dayKey);
         setView('timer');
     }, []);
 
-    const handleWorkoutComplete = useCallback(async () => {
+    const handleWorkoutComplete = useCallback(async (stats) => {
         if (!activeDayKey || !user) return;
 
         setCompletedDays((prev) => {
@@ -73,6 +112,14 @@ export default function App() {
         registerToday();
 
         const [week, day] = activeDayKey.split('-');
+
+        await saveWorkoutToCloud(user.uid, {
+            week: Number(week),
+            day: Number(day),
+            completedAt: new Date().toISOString(),
+            distanceKm: stats?.distanceKm || 0,
+            durationSeconds: stats?.durationSeconds || 0
+        });
 
         await saveCompletedWorkout({
             userName: user.displayName || user.email,
@@ -95,10 +142,18 @@ export default function App() {
         );
     }
 
-    if (!user) {
+    if (!user || view === 'onboarding') {
         return (
             <div className="app-shell">
                 <Onboarding onComplete={() => {}} />
+            </div>
+        );
+    }
+
+    if (view === 'setup') {
+        return (
+            <div className="app-shell">
+                <ProfileSetup onComplete={handleProfileComplete} />
             </div>
         );
     }
@@ -124,6 +179,11 @@ export default function App() {
 
     return (
         <div className="app-shell">
+            {!isOnline && (
+                <div className="offline-banner">
+                    📵 Sem conexão — progresso salvo localmente
+                </div>
+            )}
             <WeekPlan
                 weekPlan={weekPlan}
                 completedDays={completedDays}
@@ -133,6 +193,7 @@ export default function App() {
                 onChangeWeek={setCurrentWeek}
                 userName={user.displayName || user.email}
                 onSwitchUser={logout}
+                userProfile={userProfile}
             />
         </div>
     );
