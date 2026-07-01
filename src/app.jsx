@@ -197,6 +197,8 @@ export default function App() {
                     weekNumber={Number(week)}
                     dayNumber={Number(day)}
                     workoutTitle={freeWorkout?.title}
+                    completedDays={completedDays}
+                    userProfile={userProfile}
                 />
             </div>
         );
