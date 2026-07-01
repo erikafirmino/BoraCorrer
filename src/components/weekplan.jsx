@@ -3,6 +3,7 @@ import { getTotalDurationSeconds, TOTAL_WEEKS, DAYS_PER_WEEK } from '../data/pla
 import { useStreak } from '../hooks/usestreak.js';
 import { useTheme } from '../hooks/usetheme.js';
 import { usePushNotification } from '../hooks/usepushnotification.js';
+import { getPersonalizedMessage } from './profilesetup.jsx';
 import Calendar from './calendar.jsx';
 import './weekplan.css';
 
@@ -42,7 +43,8 @@ export default function WeekPlan({
     onStartDay,
     onChangeWeek,
     userName,
-    onSwitchUser
+    onSwitchUser,
+    userProfile
 }) {
     const days = [1, 2, 3];
     const { streak } = useStreak(completedDays);
@@ -51,6 +53,7 @@ export default function WeekPlan({
     const [showCalendar, setShowCalendar] = useState(false);
 
     const firstName = userName ? userName.split(' ')[0] : '';
+    const motivationalMsg = getPersonalizedMessage(userProfile);
 
     return (
         <div className="weekplan-container">
@@ -87,6 +90,12 @@ export default function WeekPlan({
                         Trocar usuário
                     </button>
                 </div>
+
+                {motivationalMsg && (
+                    <div className="motivational-msg">
+                        💡 {motivationalMsg}
+                    </div>
+                )}
 
                 <header className="weekplan-header">
                     <button
