@@ -391,3 +391,25 @@
     color: var(--text-muted, #4d5f80);
     background: transparent;
 }
+
+/* ===== SPOTIFY ===== */
+.spotify-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px;
+    border-radius: 14px;
+    background: rgba(29,185,84,0.08);
+    border: 1px solid rgba(29,185,84,0.2);
+    color: #1DB954;
+    font-size: 14px;
+    font-weight: 700;
+    transition: background 0.2s;
+    margin-bottom: 4px;
+}
+
+.spotify-btn:active {
+    background: rgba(29,185,84,0.15);
+}
