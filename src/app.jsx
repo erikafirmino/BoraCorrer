@@ -39,7 +39,7 @@ function useOnlineStatus() {
 }
 
 export default function App() {
-    const { user, loading: authLoading, logout } = useAuth();
+    const { user, loading: authLoading, logout, updateUserProfile } = useAuth();
     const isOnline = useOnlineStatus();
 
     const [currentWeek, setCurrentWeek] = useState(1);
@@ -194,6 +194,8 @@ export default function App() {
                 userName={user.displayName || user.email}
                 onSwitchUser={logout}
                 userProfile={userProfile}
+                user={user}
+                onUpdateName={updateUserProfile}
             />
         </div>
     );
