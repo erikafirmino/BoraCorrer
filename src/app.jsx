@@ -92,8 +92,16 @@ export default function App() {
 
     const handleProfileComplete = useCallback(async (profile) => {
         setUserProfile(profile);
-        if (user) await saveUserProfile(user.uid, profile);
-        setView('plan');
+        setView('plan'); // Muda a view ANTES de salvar na nuvem
+        if (user) {
+            saveLocal(user.uid, {
+                currentWeek: 1,
+                completedDays: [],
+                profile,
+                planId: '5k'
+            });
+            saveUserProfile(user.uid, profile).catch(console.warn);
+        }
     }, [user]);
 
     const handleStartDay = useCallback((dayKey) => {
