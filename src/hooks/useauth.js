@@ -6,7 +6,8 @@ import {
     GoogleAuthProvider,
     signOut,
     onAuthStateChanged,
-    updateProfile
+    updateProfile,
+    sendPasswordResetEmail
 } from 'firebase/auth';
 import { auth } from '../services/firebase.js';
 
@@ -16,6 +17,7 @@ export function useAuth() {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [resetSent, setResetSent] = useState(false);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
@@ -60,6 +62,31 @@ export function useAuth() {
         }
     }
 
+    async function resetPassword(email) {
+        try {
+            setError(null);
+            setResetSent(false);
+            await sendPasswordResetEmail(auth, email);
+            setResetSent(true);
+            return true;
+        } catch (err) {
+            setError(translateError(err.code));
+            return false;
+        }
+    }
+
+    async function updateUserProfile(name) {
+        try {
+            if (!auth.currentUser) return false;
+            await updateProfile(auth.currentUser, { displayName: name });
+            setUser((prev) => ({ ...prev, displayName: name }));
+            return true;
+        } catch (err) {
+            setError('Erro ao atualizar perfil.');
+            return false;
+        }
+    }
+
     async function logout() {
         await signOut(auth);
     }
@@ -82,10 +109,14 @@ export function useAuth() {
         user,
         loading,
         error,
+        resetSent,
         setError,
+        setResetSent,
         register,
         login,
         loginWithGoogle,
+        resetPassword,
+        updateUserProfile,
         logout
     };
 }
