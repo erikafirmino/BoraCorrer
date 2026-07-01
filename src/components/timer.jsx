@@ -193,6 +193,7 @@ export default function Timer({ workout, onWorkoutComplete, onExit, weekNumber, 
                 route={route}
                 weekNumber={weekNumber}
                 dayNumber={dayNumber}
+                workoutTitle={workoutTitle}
                 onExit={onExit}
             />
         );
