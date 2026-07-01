@@ -80,13 +80,22 @@ export default function ProfileSetup({ onComplete }) {
         }, 350);
     }
 
+    function handleSkip() {
+        // Pula com valores padrão para não travar
+        const defaults = { experience: 'zero', goal: 'health', availability: '3' };
+        onComplete({ ...defaults, ...answers });
+    }
+
     return (
         <div className="setup-container">
             <div className="setup-header">
                 <div className="setup-progress-bar">
                     <div className="setup-progress-fill" style={{ width: `${progress}%` }} />
                 </div>
-                <div className="setup-step-label">{step + 1} de {STEPS.length}</div>
+                <div className="setup-step-row">
+                    <span className="setup-step-label">{step + 1} de {STEPS.length}</span>
+                    <button className="setup-skip" onClick={handleSkip}>Pular →</button>
+                </div>
             </div>
 
             <div className="setup-content">
