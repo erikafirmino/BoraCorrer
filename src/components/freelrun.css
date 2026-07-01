@@ -1,0 +1,138 @@
+.freerun-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    z-index: 9999;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    animation: fade-in 0.2s ease;
+}
+
+@keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.freerun-sheet {
+    background: var(--bg-secondary, #111827);
+    border-radius: 24px 24px 0 0;
+    padding: 12px 20px 40px;
+    width: 100%;
+    max-width: 480px;
+    animation: slide-up 0.3s ease;
+    text-align: center;
+}
+
+@keyframes slide-up {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+.freerun-handle {
+    width: 40px;
+    height: 4px;
+    background: var(--border-color, #2a3650);
+    border-radius: 999px;
+    margin: 0 auto 20px;
+}
+
+.freerun-emoji {
+    font-size: 48px;
+    margin-bottom: 12px;
+}
+
+.freerun-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text-primary, #f0f4ff);
+    margin-bottom: 6px;
+}
+
+.freerun-desc {
+    font-size: 14px;
+    color: var(--text-muted, #4d5f80);
+    margin-bottom: 24px;
+}
+
+.duration-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 24px;
+}
+
+.duration-btn {
+    padding: 12px 8px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    background: var(--bg-card, #1a2236);
+    color: var(--text-secondary, #8896b3);
+    border: 1px solid var(--border-color, #2a3650);
+    transition: all 0.15s;
+}
+
+.duration-btn.selected {
+    background: rgba(249,115,22,0.15);
+    color: #f97316;
+    border-color: rgba(249,115,22,0.4);
+}
+
+.freerun-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    background: var(--bg-card, #1a2236);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.freerun-info-item {
+    text-align: center;
+}
+
+.freerun-info-value {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--accent, #f97316);
+    margin-bottom: 3px;
+}
+
+.freerun-info-label {
+    font-size: 11px;
+    color: var(--text-muted, #4d5f80);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.freerun-info-sep {
+    font-size: 18px;
+    color: var(--text-muted, #4d5f80);
+    font-weight: 300;
+}
+
+.freerun-start {
+    width: 100%;
+    padding: 17px;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #f97316, #f43f5e);
+    color: #ffffff;
+    box-shadow: 0 4px 20px rgba(249,115,22,0.4);
+    margin-bottom: 12px;
+}
+
+.freerun-cancel {
+    width: 100%;
+    padding: 14px;
+    border-radius: 14px;
+    background: transparent;
+    color: var(--text-muted, #4d5f80);
+    font-size: 14px;
+    font-weight: 600;
+}
