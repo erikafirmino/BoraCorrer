@@ -1,0 +1,381 @@
+/* ============================================================
+   settingspage.css — Tela de configurações do BoraCorrer
+   ============================================================ */
+
+.settings-page {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-primary, #0a0f1e);
+    overflow: hidden;
+}
+
+.settings-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 16px 100px; /* 100px = espaço para a bottom nav */
+}
+
+/* ============================================================
+   CABEÇALHO DE PERFIL
+   ============================================================ */
+
+.settings-profile-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    background: var(--bg-card, #1a2236);
+    border: 1px solid var(--border-color, #2a3650);
+    border-radius: 20px;
+    margin-bottom: 16px;
+}
+
+.settings-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #f97316, #f43f5e);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: 800;
+    color: #ffffff;
+    flex-shrink: 0;
+}
+
+.settings-profile-name {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--text-primary, #f0f4ff);
+    margin-bottom: 3px;
+}
+
+.settings-profile-email {
+    font-size: 13px;
+    color: var(--text-muted, #4d5f80);
+}
+
+/* ============================================================
+   STATS RÁPIDOS
+   ============================================================ */
+
+.settings-stats-row {
+    display: flex;
+    align-items: center;
+    background: var(--bg-card, #1a2236);
+    border: 1px solid var(--border-color, #2a3650);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 24px;
+}
+
+.settings-stat {
+    flex: 1;
+    text-align: center;
+}
+
+.settings-stat-value {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--accent, #f97316);
+    margin-bottom: 4px;
+}
+
+.settings-stat-label {
+    font-size: 11px;
+    color: var(--text-muted, #4d5f80);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.settings-stat-divider {
+    width: 1px;
+    height: 32px;
+    background: var(--border-color, #2a3650);
+}
+
+/* ============================================================
+   SEÇÕES
+   ============================================================ */
+
+.settings-section {
+    margin-bottom: 24px;
+}
+
+.settings-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted, #4d5f80);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 8px;
+    padding-left: 4px;
+}
+
+.settings-section-body {
+    background: var(--bg-card, #1a2236);
+    border: 1px solid var(--border-color, #2a3650);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+/* ============================================================
+   ROWS
+   ============================================================ */
+
+.settings-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-color, #2a3650);
+    width: 100%;
+    background: transparent;
+    text-align: left;
+    font-family: inherit;
+}
+
+.settings-row:last-child {
+    border-bottom: none;
+}
+
+.settings-row.clickable {
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.settings-row.clickable:active {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.settings-row.danger .settings-row-label {
+    color: #f87171;
+}
+
+.settings-row.danger .settings-row-icon {
+    filter: none;
+}
+
+.settings-row-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+    width: 28px;
+    text-align: center;
+}
+
+.settings-row-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.settings-row-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary, #f0f4ff);
+    margin-bottom: 2px;
+}
+
+.settings-row-sublabel {
+    font-size: 12px;
+    color: var(--text-muted, #4d5f80);
+    line-height: 1.3;
+}
+
+.settings-row-right {
+    font-size: 16px;
+    color: var(--text-muted, #4d5f80);
+    flex-shrink: 0;
+}
+
+/* ============================================================
+   TOGGLE
+   ============================================================ */
+
+.settings-toggle {
+    width: 48px;
+    height: 28px;
+    border-radius: 999px;
+    background: var(--border-color, #2a3650);
+    position: relative;
+    transition: background 0.25s ease;
+    flex-shrink: 0;
+}
+
+.settings-toggle.on {
+    background: var(--accent, #f97316);
+}
+
+.settings-toggle-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.settings-toggle.on .settings-toggle-thumb {
+    transform: translateX(20px);
+}
+
+/* ============================================================
+   TEMA
+   ============================================================ */
+
+.settings-theme-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.settings-theme-option {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-color, #2a3650);
+    background: transparent;
+    text-align: left;
+    font-family: inherit;
+    position: relative;
+    transition: background 0.15s ease;
+}
+
+.settings-theme-option:last-child {
+    border-bottom: none;
+}
+
+.settings-theme-option:active {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.settings-theme-option.active {
+    background: rgba(249, 115, 22, 0.06);
+}
+
+.settings-theme-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary, #f0f4ff);
+    margin-bottom: 2px;
+}
+
+.settings-theme-sub {
+    font-size: 12px;
+    color: var(--text-muted, #4d5f80);
+}
+
+.settings-theme-check {
+    position: absolute;
+    right: 16px;
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--accent, #f97316);
+}
+
+/* ============================================================
+   EDITAR NOME
+   ============================================================ */
+
+.settings-name-edit {
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.settings-name-input {
+    background: var(--bg-primary, #0a0f1e);
+    border: 1px solid var(--accent, #f97316);
+    color: var(--text-primary, #f0f4ff);
+    padding: 12px 14px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-family: inherit;
+    width: 100%;
+}
+
+.settings-name-input:focus {
+    outline: none;
+}
+
+.settings-name-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.settings-name-cancel {
+    flex: 1;
+    padding: 11px;
+    border-radius: 10px;
+    background: var(--border-color, #2a3650);
+    color: var(--text-secondary, #8896b3);
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+}
+
+.settings-name-save {
+    flex: 1;
+    padding: 11px;
+    border-radius: 10px;
+    background: var(--accent, #f97316);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+}
+
+.settings-name-save:disabled {
+    opacity: 0.4;
+}
+
+/* ============================================================
+   LOGOUT CONFIRM
+   ============================================================ */
+
+.settings-logout-confirm {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.settings-logout-confirm p {
+    font-size: 13px;
+    color: var(--text-secondary, #8896b3);
+    line-height: 1.5;
+}
+
+.settings-logout-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.settings-logout-cancel {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    background: var(--border-color, #2a3650);
+    color: var(--text-secondary, #8896b3);
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+}
+
+.settings-logout-confirm-btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #f87171;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+}
