@@ -2,10 +2,9 @@
 // app.jsx — Componente raiz do BoraCorrer
 // ============================================================
 // Estratégia de dados:
-//   - Firestore users/:uid          → dados privados (fonte primária)
-//   - Firestore public_profiles/:uid → dados públicos (página de convite)
-//   - localStorage                  → cache de performance
-//   - Google Sheets                 → espelho admin (fire-and-forget)
+//   - Firestore   → fonte primária (progresso, prefs, streak, perfil)
+//   - localStorage → cache de performance (perdido ao limpar cache)
+//   - Google Sheets → espelho admin (fire-and-forget)
 //
 // Navegação:
 //   Bottom Nav: home | calendar | history | settings
@@ -40,8 +39,10 @@ import {
     saveProgressToCloud,
     saveWorkoutToCloud,
     saveUserProfile,
-    savePublicProfile,
     saveDisplayName,
+    savePublicProfile,
+    savePreferencesToCloud,
+    addTrainedDate,
 } from './services/firestore.js';
 
 import { useAuth }   from './hooks/useauth.js';
@@ -63,7 +64,7 @@ function getRoute() {
 // Cache local (localStorage) — apenas performance
 // ============================================================
 
-function getCacheKey(uid)  { return `boracorrer-cache-${uid}`; }
+function getCacheKey(uid) { return `boracorrer-cache-${uid}`; }
 
 function readCache(uid) {
     try {
@@ -78,8 +79,13 @@ function writeCache(uid, state) {
 }
 
 function clearCache(uid) {
-    try { localStorage.removeItem(getCacheKey(uid)); }
-    catch {}
+    try {
+        localStorage.removeItem(getCacheKey(uid));
+        localStorage.removeItem('boracorrer-dates');
+        localStorage.removeItem('boracorrer-theme');
+        localStorage.removeItem('boracorrer-voice');
+        localStorage.removeItem('boracorrer-reminder');
+    } catch {}
 }
 
 // ============================================================
@@ -104,7 +110,7 @@ function useOnlineStatus() {
 }
 
 // ============================================================
-// App raiz — detecta rota antes de qualquer coisa
+// App raiz
 // ============================================================
 
 export default function App() {
@@ -129,21 +135,38 @@ function MainApp() {
     const { user, loading: authLoading, logout, updateUserProfile } = useAuth();
     const isOnline = useOnlineStatus();
 
+    // ---- Estado principal ----
     const [currentWeek,    setCurrentWeek]    = useState(1);
     const [completedDays,  setCompletedDays]  = useState([]);
     const [userProfile,    setUserProfile]    = useState(null);
     const [currentPlanId,  setCurrentPlanId]  = useState('5k');
+    const [trainedDates,   setTrainedDates]   = useState([]);
+
+    // ---- Preferências (migradas do localStorage para Firestore) ----
+    const [theme,            setTheme]            = useState(
+        () => localStorage.getItem('boracorrer-theme') || 'auto'
+    );
+    const [voiceEnabled,     setVoiceEnabled]     = useState(
+        () => localStorage.getItem('boracorrer-voice') !== 'false'
+    );
+    const [remindersEnabled, setRemindersEnabled] = useState(
+        () => localStorage.getItem('boracorrer-reminder') === 'true'
+    );
+
+    // ---- Navegação ----
     const [activeDayKey,   setActiveDayKey]   = useState(null);
     const [freeWorkout,    setFreeWorkout]    = useState(null);
     const [showModeSelect, setShowModeSelect] = useState(false);
     const [showFreeRun,    setShowFreeRun]    = useState(null);
     const [activeTab,      setActiveTab]      = useState('home');
-    const [view,           setView]           = useState('loading');
 
-    const { registerToday } = useStreak(completedDays);
+    // 'loading' | 'onboarding' | 'setup' | 'plan' | 'timer'
+    const [view, setView] = useState('loading');
+
+    const { streak, registerToday } = useStreak(completedDays, trainedDates);
 
     // ----------------------------------------------------------
-    // Aplica objeto de estado nos hooks
+    // Aplica estado carregado do Firestore/cache
     // ----------------------------------------------------------
 
     function applyState(state) {
@@ -151,6 +174,21 @@ function MainApp() {
         setCompletedDays(state.completedDays  ?? []);
         setUserProfile(state.profile          ?? null);
         setCurrentPlanId(state.planId         ?? '5k');
+        setTrainedDates(state.trainedDates    ?? []);
+
+        // Preferências vindas do Firestore sobrescrevem o localStorage
+        if (state.theme) {
+            setTheme(state.theme);
+            localStorage.setItem('boracorrer-theme', state.theme);
+        }
+        if (typeof state.voiceEnabled === 'boolean') {
+            setVoiceEnabled(state.voiceEnabled);
+            localStorage.setItem('boracorrer-voice', String(state.voiceEnabled));
+        }
+        if (typeof state.remindersEnabled === 'boolean') {
+            setRemindersEnabled(state.remindersEnabled);
+            localStorage.setItem('boracorrer-reminder', String(state.remindersEnabled));
+        }
     }
 
     // ----------------------------------------------------------
@@ -168,7 +206,7 @@ function MainApp() {
             displayName: user.displayName || '',
         }).catch(() => {});
 
-        // Salva displayName no perfil público (para página de convite)
+        // Salva displayName no Firestore para página de convite
         if (user.displayName) {
             saveDisplayName(user.uid, user.displayName).catch(() => {});
         }
@@ -198,7 +236,7 @@ function MainApp() {
     }, [user, authLoading]);
 
     // ----------------------------------------------------------
-    // Persiste progresso sempre que o estado muda
+    // Persiste progresso no Firestore sempre que o estado muda
     // ----------------------------------------------------------
 
     useEffect(() => {
@@ -207,17 +245,21 @@ function MainApp() {
         const state = {
             currentWeek,
             completedDays,
-            profile: userProfile,
-            planId:  currentPlanId,
+            profile:          userProfile,
+            planId:           currentPlanId,
+            trainedDates,
+            theme,
+            voiceEnabled,
+            remindersEnabled,
         };
 
         // Cache local imediato
         writeCache(user.uid, state);
 
-        // Firestore privado (fonte primária)
+        // Firestore (fonte primária)
         saveProgressToCloud(user.uid, state);
 
-        // Firestore público (para página de convite)
+        // Perfil público (para link de convite)
         savePublicProfile(user.uid, {
             displayName:   user.displayName || '',
             currentWeek,
@@ -225,7 +267,7 @@ function MainApp() {
             planId:        currentPlanId,
         }).catch(() => {});
 
-        // Sheets espelho (fire-and-forget)
+        // Sheets (espelho admin — fire-and-forget)
         syncProgressToSheets({
             uid:          user.uid,
             currentWeek,
@@ -234,7 +276,33 @@ function MainApp() {
             profile:      userProfile,
         }).catch(() => {});
 
-    }, [user, currentWeek, completedDays, userProfile, currentPlanId, view]);
+    }, [user, currentWeek, completedDays, userProfile, currentPlanId,
+        trainedDates, theme, voiceEnabled, remindersEnabled, view]);
+
+    // ----------------------------------------------------------
+    // Handler: salvar preferências isoladamente (sem reescrever tudo)
+    // ----------------------------------------------------------
+
+    const handleSavePreference = useCallback((key, value) => {
+        if (!user) return;
+
+        const updates = { theme, voiceEnabled, remindersEnabled, [key]: value };
+
+        if (key === 'theme')            setTheme(value);
+        if (key === 'voiceEnabled')     setVoiceEnabled(value);
+        if (key === 'remindersEnabled') setRemindersEnabled(value);
+
+        // Persiste localStorage imediatamente
+        const lsKeys = {
+            theme:            'boracorrer-theme',
+            voiceEnabled:     'boracorrer-voice',
+            remindersEnabled: 'boracorrer-reminder',
+        };
+        if (lsKeys[key]) localStorage.setItem(lsKeys[key], String(value));
+
+        // Persiste Firestore em background
+        savePreferencesToCloud(user.uid, updates).catch(() => {});
+    }, [user, theme, voiceEnabled, remindersEnabled]);
 
     // ----------------------------------------------------------
     // Handlers
@@ -242,10 +310,14 @@ function MainApp() {
 
     const handleProfileComplete = useCallback(async (profile) => {
         const initialState = {
-            currentWeek:   1,
-            completedDays: [],
+            currentWeek:      1,
+            completedDays:    [],
             profile,
-            planId:        '5k',
+            planId:           '5k',
+            trainedDates:     [],
+            theme,
+            voiceEnabled,
+            remindersEnabled,
         };
 
         setUserProfile(profile);
@@ -253,19 +325,12 @@ function MainApp() {
 
         if (user) {
             writeCache(user.uid, initialState);
-
             await Promise.all([
                 saveUserProfile(user.uid, profile),
                 saveProgressToCloud(user.uid, initialState),
-                savePublicProfile(user.uid, {
-                    displayName:   user.displayName || '',
-                    currentWeek:   1,
-                    completedDays: [],
-                    planId:        '5k',
-                }),
             ]).catch(console.warn);
         }
-    }, [user]);
+    }, [user, theme, voiceEnabled, remindersEnabled]);
 
     const handleResetProfile = useCallback(() => {
         setUserProfile(null);
@@ -296,6 +361,7 @@ function MainApp() {
     const handleWorkoutComplete = useCallback(async (stats) => {
         if (!user) return;
 
+        // Marca o dia como concluído
         if (activeDayKey) {
             setCompletedDays(prev => {
                 if (prev.includes(activeDayKey)) return prev;
@@ -303,8 +369,16 @@ function MainApp() {
             });
         }
 
-        const today      = new Date().toISOString().slice(0, 10);
+        // Registra a data no streak (localStorage + Firestore)
+        const today = new Date().toISOString().slice(0, 10);
         registerToday();
+        setTrainedDates(prev => {
+            if (prev.includes(today)) return prev;
+            return [...prev, today];
+        });
+
+        // Persiste data no Firestore
+        addTrainedDate(user.uid, today).catch(() => {});
 
         const [week, day] = activeDayKey ? activeDayKey.split('-') : [0, 0];
 
@@ -321,7 +395,10 @@ function MainApp() {
             calories:        stats?.calories        || 0,
         };
 
+        // Firestore (fonte primária)
         await saveWorkoutToCloud(user.uid, workoutData);
+
+        // Sheets (espelho admin — fire-and-forget)
         saveCompletedWorkout(workoutData).catch(() => {});
         syncStreakDateToSheets({ uid: user.uid, date: today }).catch(() => {});
 
@@ -413,6 +490,7 @@ function MainApp() {
                         currentWeek={currentWeek}
                         totalWeeks={TOTAL_WEEKS}
                         currentPlanId={currentPlanId}
+                        streak={streak}
                         onStartDay={handleStartDay}
                         onChangeWeek={setCurrentWeek}
                         onOpenModeSelect={() => setShowModeSelect(true)}
@@ -426,7 +504,11 @@ function MainApp() {
 
                 {activeTab === 'calendar' && (
                     <div className="tab-page">
-                        <Calendar embedded />
+                        <Calendar
+                            trainedDates={trainedDates}
+                            onClose={() => setActiveTab('home')}
+                            embedded
+                        />
                     </div>
                 )}
 
@@ -434,6 +516,8 @@ function MainApp() {
                     <div className="tab-page">
                         <HistoryChart
                             completedDays={completedDays}
+                            trainedDates={trainedDates}
+                            onClose={() => setActiveTab('home')}
                             embedded
                         />
                     </div>
@@ -445,6 +529,10 @@ function MainApp() {
                         userProfile={userProfile}
                         currentPlanId={currentPlanId}
                         completedDays={completedDays}
+                        theme={theme}
+                        voiceEnabled={voiceEnabled}
+                        remindersEnabled={remindersEnabled}
+                        onSavePreference={handleSavePreference}
                         onUpdateName={updateUserProfile}
                         onLogout={handleLogout}
                         onResetProfile={handleResetProfile}
