@@ -1,62 +1,61 @@
 // ============================================================
-// app.jsx
-// Componente raiz do BoraCorrer.
-//
+// app.jsx — Componente raiz do BoraCorrer
+// ============================================================
 // Estratégia de dados:
-//   - Firestore é a FONTE PRIMÁRIA (dados persistem após limpar cache)
-//   - localStorage é apenas CACHE de performance (dados offline/rápidos)
-//   - Ao logar: busca Firestore em background enquanto mostra loading
-//   - Ao salvar: persiste sempre no Firestore + atualiza cache local
+//   - Firestore   → fonte primária (persistente, offline, rápido)
+//   - localStorage → cache de performance (perdido ao limpar cache)
+//   - Google Sheets → espelho para painel admin (fire-and-forget)
 // ============================================================
 
 import React, { useState, useEffect, useCallback } from 'react';
-import Onboarding    from './components/onboarding.jsx';
-import WeekPlan      from './components/weekplan.jsx';
-import Timer         from './components/timer.jsx';
-import ProfileSetup  from './components/profilesetup.jsx';
-import ModeSelect    from './components/modeselect.jsx';
-import FreeRun       from './components/freelrun.jsx';
-import { getWeekPlan, TOTAL_WEEKS }    from './data/plans.js';
-import { saveCompletedWorkout }        from './services/api.js';
+import Onboarding   from './components/onboarding.jsx';
+import WeekPlan     from './components/weekplan.jsx';
+import Timer        from './components/timer.jsx';
+import ProfileSetup from './components/profilesetup.jsx';
+import ModeSelect   from './components/modeselect.jsx';
+import FreeRun      from './components/freelrun.jsx';
+
+import { getWeekPlan, TOTAL_WEEKS } from './data/plans.js';
+
+import {
+    syncUserToSheets,
+    syncProgressToSheets,
+    syncStreakDateToSheets,
+    saveCompletedWorkout,
+} from './services/api.js';
+
 import {
     loadProgressFromCloud,
     saveProgressToCloud,
     saveWorkoutToCloud,
-    saveUserProfile
+    saveUserProfile,
 } from './services/firestore.js';
+
 import { useAuth }   from './hooks/useauth.js';
 import { useStreak } from './hooks/usestreak.js';
 import './app.css';
 
 // ============================================================
-// Helpers de cache local (localStorage)
+// Cache local (localStorage) — apenas performance
 // ============================================================
 
-function getCacheKey(uid) {
-    return `boracorrer-cache-${uid}`;
-}
+function getCacheKey(uid)   { return `boracorrer-cache-${uid}`; }
 
 function readCache(uid) {
     try {
         const raw = localStorage.getItem(getCacheKey(uid));
         return raw ? JSON.parse(raw) : null;
-    } catch {
-        return null;
-    }
+    } catch { return null; }
 }
 
 function writeCache(uid, state) {
-    try {
-        localStorage.setItem(getCacheKey(uid), JSON.stringify(state));
-    } catch {
-        // localStorage indisponível (modo privado, storage cheio) — ignora silenciosamente
-    }
+    try { localStorage.setItem(getCacheKey(uid), JSON.stringify(state)); }
+    catch {}
 }
 
 function clearCache(uid) {
-    try {
-        localStorage.removeItem(getCacheKey(uid));
-    } catch {}
+    try { localStorage.removeItem(getCacheKey(uid)); }
+    catch {}
 }
 
 // ============================================================
@@ -67,15 +66,13 @@ function useOnlineStatus() {
     const [online, setOnline] = useState(navigator.onLine);
 
     useEffect(() => {
-        const handleOnline  = () => setOnline(true);
-        const handleOffline = () => setOnline(false);
-
-        window.addEventListener('online',  handleOnline);
-        window.addEventListener('offline', handleOffline);
-
+        const on  = () => setOnline(true);
+        const off = () => setOnline(false);
+        window.addEventListener('online',  on);
+        window.addEventListener('offline', off);
         return () => {
-            window.removeEventListener('online',  handleOnline);
-            window.removeEventListener('offline', handleOffline);
+            window.removeEventListener('online',  on);
+            window.removeEventListener('offline', off);
         };
     }, []);
 
@@ -98,53 +95,13 @@ export default function App() {
     const [freeWorkout,    setFreeWorkout]    = useState(null);
     const [showModeSelect, setShowModeSelect] = useState(false);
     const [showFreeRun,    setShowFreeRun]    = useState(null);
-
-    // 'loading' → 'onboarding' | 'setup' | 'plan' | 'timer'
-    const [view, setView] = useState('loading');
+    const [view,           setView]           = useState('loading');
 
     const { registerToday } = useStreak(completedDays);
 
     // ----------------------------------------------------------
-    // Carrega o progresso do usuário ao autenticar
+    // Aplica um objeto de estado nos hooks
     // ----------------------------------------------------------
-    useEffect(() => {
-        if (authLoading) return;
-
-        if (!user) {
-            setView('onboarding');
-            return;
-        }
-
-        async function loadProgress() {
-            // 1. Tenta o cache local para resposta imediata
-            const cached = readCache(user.uid);
-
-            if (cached) {
-                applyState(cached);
-                setView(cached.profile ? 'plan' : 'setup');
-            } else {
-                // Sem cache: mantém 'loading' até o Firestore responder
-                setView('loading');
-            }
-
-            // 2. Sempre busca o Firestore (fonte primária)
-            //    — sobrescreve o cache se os dados da nuvem forem mais recentes
-            const cloud = await loadProgressFromCloud(user.uid);
-
-            if (cloud) {
-                applyState(cloud);
-                writeCache(user.uid, cloud); // atualiza o cache com dados da nuvem
-                setView(cloud.profile ? 'plan' : 'setup');
-            } else if (!cached) {
-                // Usuário novo: sem cache e sem dados na nuvem
-                setView('setup');
-            }
-        }
-
-        loadProgress();
-    }, [user, authLoading]);
-
-    /** Aplica um objeto de estado nos state hooks */
     function applyState(state) {
         setCurrentWeek(state.currentWeek   ?? 1);
         setCompletedDays(state.completedDays ?? []);
@@ -153,8 +110,45 @@ export default function App() {
     }
 
     // ----------------------------------------------------------
+    // Carrega progresso ao autenticar
+    // ----------------------------------------------------------
+    useEffect(() => {
+        if (authLoading) return;
+        if (!user) { setView('onboarding'); return; }
+
+        // Espelha o login do usuário no Sheets (fire-and-forget)
+        syncUserToSheets({
+            uid:         user.uid,
+            email:       user.email       || '',
+            displayName: user.displayName || '',
+        }).catch(() => {});
+
+        async function loadProgress() {
+            // 1. Cache local → resposta imediata
+            const cached = readCache(user.uid);
+            if (cached) {
+                applyState(cached);
+                setView(cached.profile ? 'plan' : 'setup');
+            } else {
+                setView('loading');
+            }
+
+            // 2. Firestore → fonte primária (sempre consultado)
+            const cloud = await loadProgressFromCloud(user.uid);
+            if (cloud) {
+                applyState(cloud);
+                writeCache(user.uid, cloud);
+                setView(cloud.profile ? 'plan' : 'setup');
+            } else if (!cached) {
+                setView('setup');
+            }
+        }
+
+        loadProgress();
+    }, [user, authLoading]);
+
+    // ----------------------------------------------------------
     // Persiste progresso sempre que o estado muda
-    // Firestore é a fonte primária; localStorage é só cache.
     // ----------------------------------------------------------
     useEffect(() => {
         if (!user || ['loading', 'onboarding', 'setup'].includes(view)) return;
@@ -162,16 +156,24 @@ export default function App() {
         const state = {
             currentWeek,
             completedDays,
-            profile:  userProfile,
-            planId:   currentPlanId
+            profile: userProfile,
+            planId:  currentPlanId,
         };
 
-        // Atualiza cache local imediatamente
+        // Cache local imediato
         writeCache(user.uid, state);
 
-        // Persiste na nuvem (Firestore) — sempre, não apenas quando online,
-        // pois o Firestore SDK faz queue offline automaticamente
+        // Firestore (fonte primária — SDK faz queue offline)
         saveProgressToCloud(user.uid, state);
+
+        // Sheets (espelho admin — fire-and-forget)
+        syncProgressToSheets({
+            uid:          user.uid,
+            currentWeek,
+            completedDays,
+            planId:       currentPlanId,
+            profile:      userProfile,
+        }).catch(() => {});
 
     }, [user, currentWeek, completedDays, userProfile, currentPlanId, view]);
 
@@ -184,18 +186,17 @@ export default function App() {
             currentWeek:   1,
             completedDays: [],
             profile,
-            planId:        '5k'
+            planId:        '5k',
         };
 
         setUserProfile(profile);
-        setView('plan'); // navega imediatamente, sem esperar a nuvem
+        setView('plan');
 
         if (user) {
             writeCache(user.uid, initialState);
-            // Salva perfil E progresso inicial no Firestore em paralelo
             await Promise.all([
                 saveUserProfile(user.uid, profile),
-                saveProgressToCloud(user.uid, initialState)
+                saveProgressToCloud(user.uid, initialState),
             ]).catch(console.warn);
         }
     }, [user]);
@@ -223,37 +224,42 @@ export default function App() {
     const handleWorkoutComplete = useCallback(async (stats) => {
         if (!user) return;
 
+        // Marca o dia como concluído
         if (activeDayKey) {
-            setCompletedDays((prev) => {
+            setCompletedDays(prev => {
                 if (prev.includes(activeDayKey)) return prev;
                 return [...prev, activeDayKey];
             });
         }
 
+        // Registra data para streak
+        const today = new Date().toISOString().slice(0, 10);
         registerToday();
 
         const [week, day] = activeDayKey ? activeDayKey.split('-') : [0, 0];
 
-        // Salva treino no histórico Firestore
-        await saveWorkoutToCloud(user.uid, {
+        const workoutData = {
+            uid:             user.uid,
+            userName:        user.displayName || user.email,
             week:            Number(week),
             day:             Number(day),
             planId:          currentPlanId,
-            title:           freeWorkout?.title || null,
+            title:           freeWorkout?.title     || null,
             completedAt:     new Date().toISOString(),
             distanceKm:      stats?.distanceKm      || 0,
-            durationSeconds: stats?.durationSeconds || 0
-        });
+            durationSeconds: stats?.durationSeconds || 0,
+            calories:        stats?.calories        || 0,
+        };
 
-        // Salva também no Google Sheets (histórico legado)
-        if (activeDayKey) {
-            await saveCompletedWorkout({
-                userName:    user.displayName || user.email,
-                week:        Number(week),
-                day:         Number(day),
-                completedAt: new Date().toISOString()
-            });
-        }
+        // Firestore (fonte primária)
+        await saveWorkoutToCloud(user.uid, workoutData);
+
+        // Sheets (espelho admin) — fire-and-forget
+        saveCompletedWorkout(workoutData).catch(() => {});
+
+        // Streak no Sheets — fire-and-forget
+        syncStreakDateToSheets({ uid: user.uid, date: today }).catch(() => {});
+
     }, [activeDayKey, user, registerToday, currentPlanId, freeWorkout]);
 
     const handleExitTimer = useCallback(() => {
@@ -263,7 +269,7 @@ export default function App() {
     }, []);
 
     const handleLogout = useCallback(async () => {
-        if (user) clearCache(user.uid); // limpa cache ao sair
+        if (user) clearCache(user.uid);
         await logout();
     }, [user, logout]);
 
@@ -274,11 +280,7 @@ export default function App() {
     if (authLoading || view === 'loading') {
         return (
             <div className="app-shell app-loading">
-                <img
-                    src="/icons/192.png"
-                    alt="BoraCorrer"
-                    className="loading-logo"
-                />
+                <img src="/icons/192.png" alt="BoraCorrer" className="loading-logo" />
             </div>
         );
     }
@@ -323,13 +325,11 @@ export default function App() {
         );
     }
 
-    // Vista padrão: plano semanal
     const weekPlan = getWeekPlan(currentWeek, currentPlanId);
 
     return (
         <div className="app-shell">
 
-            {/* Banner offline */}
             {!isOnline && (
                 <div className="offline-banner">
                     📵 Sem conexão — progresso salvo localmente
