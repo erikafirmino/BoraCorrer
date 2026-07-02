@@ -2,9 +2,10 @@
 // app.jsx — Componente raiz do BoraCorrer
 // ============================================================
 // Estratégia de dados:
-//   - Firestore   → fonte primária
-//   - localStorage → cache de performance
-//   - Google Sheets → espelho admin (fire-and-forget)
+//   - Firestore users/:uid          → dados privados (fonte primária)
+//   - Firestore public_profiles/:uid → dados públicos (página de convite)
+//   - localStorage                  → cache de performance
+//   - Google Sheets                 → espelho admin (fire-and-forget)
 //
 // Navegação:
 //   Bottom Nav: home | calendar | history | settings
@@ -13,17 +14,17 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 
-import Onboarding    from './components/onboarding.jsx';
-import WeekPlan      from './components/weekplan.jsx';
-import Timer         from './components/timer.jsx';
-import ProfileSetup  from './components/profilesetup.jsx';
-import ModeSelect    from './components/modeselect.jsx';
-import FreeRun       from './components/freelrun.jsx';
-import InvitePage    from './components/invitepage.jsx';
-import BottomNav     from './components/bottomnav.jsx';
-import Calendar      from './components/calendar.jsx';
-import HistoryChart  from './components/historychart.jsx';
-import SettingsPage  from './components/settingspage.jsx';
+import Onboarding   from './components/onboarding.jsx';
+import WeekPlan     from './components/weekplan.jsx';
+import Timer        from './components/timer.jsx';
+import ProfileSetup from './components/profilesetup.jsx';
+import ModeSelect   from './components/modeselect.jsx';
+import FreeRun      from './components/freelrun.jsx';
+import InvitePage   from './components/invitepage.jsx';
+import BottomNav    from './components/bottomnav.jsx';
+import Calendar     from './components/calendar.jsx';
+import HistoryChart from './components/historychart.jsx';
+import SettingsPage from './components/settingspage.jsx';
 
 import { getWeekPlan, TOTAL_WEEKS } from './data/plans.js';
 
@@ -39,6 +40,7 @@ import {
     saveProgressToCloud,
     saveWorkoutToCloud,
     saveUserProfile,
+    savePublicProfile,
     saveDisplayName,
 } from './services/firestore.js';
 
@@ -58,7 +60,7 @@ function getRoute() {
 }
 
 // ============================================================
-// Cache local (localStorage)
+// Cache local (localStorage) — apenas performance
 // ============================================================
 
 function getCacheKey(uid)  { return `boracorrer-cache-${uid}`; }
@@ -102,7 +104,7 @@ function useOnlineStatus() {
 }
 
 // ============================================================
-// App raiz
+// App raiz — detecta rota antes de qualquer coisa
 // ============================================================
 
 export default function App() {
@@ -136,14 +138,12 @@ function MainApp() {
     const [showModeSelect, setShowModeSelect] = useState(false);
     const [showFreeRun,    setShowFreeRun]    = useState(null);
     const [activeTab,      setActiveTab]      = useState('home');
-
-    // 'loading' | 'onboarding' | 'setup' | 'plan' | 'timer'
-    const [view, setView] = useState('loading');
+    const [view,           setView]           = useState('loading');
 
     const { registerToday } = useStreak(completedDays);
 
     // ----------------------------------------------------------
-    // Aplica estado
+    // Aplica objeto de estado nos hooks
     // ----------------------------------------------------------
 
     function applyState(state) {
@@ -161,17 +161,20 @@ function MainApp() {
         if (authLoading) return;
         if (!user) { setView('onboarding'); return; }
 
+        // Espelha login no Sheets (fire-and-forget)
         syncUserToSheets({
             uid:         user.uid,
             email:       user.email       || '',
             displayName: user.displayName || '',
         }).catch(() => {});
 
+        // Salva displayName no perfil público (para página de convite)
         if (user.displayName) {
             saveDisplayName(user.uid, user.displayName).catch(() => {});
         }
 
         async function loadProgress() {
+            // 1. Cache local → resposta imediata
             const cached = readCache(user.uid);
             if (cached) {
                 applyState(cached);
@@ -180,6 +183,7 @@ function MainApp() {
                 setView('loading');
             }
 
+            // 2. Firestore → fonte primária (sempre consultado)
             const cloud = await loadProgressFromCloud(user.uid);
             if (cloud) {
                 applyState(cloud);
@@ -194,7 +198,7 @@ function MainApp() {
     }, [user, authLoading]);
 
     // ----------------------------------------------------------
-    // Persiste progresso
+    // Persiste progresso sempre que o estado muda
     // ----------------------------------------------------------
 
     useEffect(() => {
@@ -207,9 +211,21 @@ function MainApp() {
             planId:  currentPlanId,
         };
 
+        // Cache local imediato
         writeCache(user.uid, state);
+
+        // Firestore privado (fonte primária)
         saveProgressToCloud(user.uid, state);
 
+        // Firestore público (para página de convite)
+        savePublicProfile(user.uid, {
+            displayName:   user.displayName || '',
+            currentWeek,
+            completedDays,
+            planId:        currentPlanId,
+        }).catch(() => {});
+
+        // Sheets espelho (fire-and-forget)
         syncProgressToSheets({
             uid:          user.uid,
             currentWeek,
@@ -231,13 +247,22 @@ function MainApp() {
             profile,
             planId:        '5k',
         };
+
         setUserProfile(profile);
         setView('plan');
+
         if (user) {
             writeCache(user.uid, initialState);
+
             await Promise.all([
                 saveUserProfile(user.uid, profile),
                 saveProgressToCloud(user.uid, initialState),
+                savePublicProfile(user.uid, {
+                    displayName:   user.displayName || '',
+                    currentWeek:   1,
+                    completedDays: [],
+                    planId:        '5k',
+                }),
             ]).catch(console.warn);
         }
     }, [user]);
@@ -278,7 +303,7 @@ function MainApp() {
             });
         }
 
-        const today = new Date().toISOString().slice(0, 10);
+        const today      = new Date().toISOString().slice(0, 10);
         registerToday();
 
         const [week, day] = activeDayKey ? activeDayKey.split('-') : [0, 0];
@@ -401,7 +426,7 @@ function MainApp() {
 
                 {activeTab === 'calendar' && (
                     <div className="tab-page">
-                        <Calendar onClose={() => setActiveTab('home')} embedded />
+                        <Calendar embedded />
                     </div>
                 )}
 
@@ -409,7 +434,6 @@ function MainApp() {
                     <div className="tab-page">
                         <HistoryChart
                             completedDays={completedDays}
-                            onClose={() => setActiveTab('home')}
                             embedded
                         />
                     </div>
