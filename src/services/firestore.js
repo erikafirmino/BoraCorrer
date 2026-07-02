@@ -1,8 +1,11 @@
 // ============================================================
 // firestore.js
 // Serviço de sincronização com Firestore.
-// Firestore é a fonte primária de dados — localStorage é
-// apenas um cache para performance e uso offline.
+//
+// Coleções:
+//   users/{uid}            → dados privados (auth obrigatória)
+//   publicProfiles/{uid}   → dados públicos (leitura pública)
+//   users/{uid}/workouts   → histórico de treinos
 // ============================================================
 
 import {
@@ -16,7 +19,7 @@ import {
 import { db } from './firebase.js';
 
 // ============================================================
-// PROGRESSO DO USUÁRIO
+// PROGRESSO DO USUÁRIO (privado)
 // ============================================================
 
 /**
@@ -37,8 +40,6 @@ export async function loadProgressFromCloud(uid) {
 
 /**
  * Salva o progresso completo do usuário no Firestore.
- * Inclui: semana atual, dias concluídos, perfil e plano ativo.
- * Usa merge:true para nunca sobrescrever campos não enviados.
  */
 export async function saveProgressToCloud(uid, state) {
     try {
@@ -60,7 +61,51 @@ export async function saveProgressToCloud(uid, state) {
 }
 
 // ============================================================
-// PERFIL DO USUÁRIO
+// PERFIL PÚBLICO (leitura sem autenticação)
+// ============================================================
+
+/**
+ * Salva dados públicos do usuário em publicProfiles/{uid}.
+ * Esta coleção tem leitura pública — usada pela página de convite.
+ * Deve ser chamada ao logar e ao atualizar o nome.
+ */
+export async function savePublicProfile(uid, { displayName, currentWeek, completedDays, planId }) {
+    try {
+        const ref = doc(db, 'publicProfiles', uid);
+        await setDoc(
+            ref,
+            {
+                displayName:   displayName   || '',
+                currentWeek:   currentWeek   ?? 1,
+                completedDays: completedDays ?? [],
+                planId:        planId        ?? '5k',
+                updatedAt:     serverTimestamp()
+            },
+            { merge: true }
+        );
+    } catch (err) {
+        console.warn('Firestore: erro ao salvar perfil público', err);
+    }
+}
+
+/**
+ * Carrega o perfil público de um usuário pelo UID.
+ * Não requer autenticação — acessível pela página de convite.
+ */
+export async function loadPublicProfile(uid) {
+    try {
+        const ref  = doc(db, 'publicProfiles', uid);
+        const snap = await getDoc(ref);
+        if (!snap.exists()) return null;
+        return snap.data();
+    } catch (err) {
+        console.warn('Firestore: erro ao carregar perfil público', err);
+        return null;
+    }
+}
+
+// ============================================================
+// PERFIL DO USUÁRIO (privado)
 // ============================================================
 
 /**
@@ -82,37 +127,8 @@ export async function saveUserProfile(uid, profile) {
     }
 }
 
-// ============================================================
-// PERFIL PÚBLICO (para página de convite)
-// ============================================================
-
 /**
- * Carrega dados públicos de um usuário pelo UID.
- * Retorna apenas nome, progresso e semana — sem dados sensíveis.
- */
-export async function loadPublicProfile(uid) {
-    try {
-        const ref  = doc(db, 'users', uid);
-        const snap = await getDoc(ref);
-        if (!snap.exists()) return null;
-
-        const data = snap.data();
-
-        // Retorna apenas campos públicos
-        return {
-            currentWeek:   data.currentWeek   ?? 1,
-            completedDays: data.completedDays ?? [],
-            planId:        data.planId        ?? '5k',
-            displayName:   data.displayName   ?? null,
-        };
-    } catch (err) {
-        console.warn('Firestore: erro ao carregar perfil público', err);
-        return null;
-    }
-}
-
-/**
- * Salva o displayName do usuário no Firestore para uso na página de convite.
+ * Salva o displayName do usuário no Firestore.
  */
 export async function saveDisplayName(uid, displayName) {
     try {
@@ -124,7 +140,7 @@ export async function saveDisplayName(uid, displayName) {
 }
 
 // ============================================================
-// HISTÓRICO DE TREINOS
+// HISTÓRICO DE TREINOS (privado)
 // ============================================================
 
 /**
