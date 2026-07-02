@@ -5,6 +5,10 @@
 //   - Firestore   → fonte primária (persistente, offline, rápido)
 //   - localStorage → cache de performance (perdido ao limpar cache)
 //   - Google Sheets → espelho para painel admin (fire-and-forget)
+//
+// Rotas:
+//   /               → app principal
+//   /convite/:uid   → página de convite pública
 // ============================================================
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -14,6 +18,7 @@ import Timer        from './components/timer.jsx';
 import ProfileSetup from './components/profilesetup.jsx';
 import ModeSelect   from './components/modeselect.jsx';
 import FreeRun      from './components/freelrun.jsx';
+import InvitePage   from './components/invitepage.jsx';
 
 import { getWeekPlan, TOTAL_WEEKS } from './data/plans.js';
 
@@ -29,11 +34,28 @@ import {
     saveProgressToCloud,
     saveWorkoutToCloud,
     saveUserProfile,
+    saveDisplayName,
 } from './services/firestore.js';
 
 import { useAuth }   from './hooks/useauth.js';
 import { useStreak } from './hooks/usestreak.js';
 import './app.css';
+
+// ============================================================
+// Roteamento simples baseado em window.location.pathname
+// ============================================================
+
+function getRoute() {
+    const path = window.location.pathname;
+
+    // /convite/:uid
+    const inviteMatch = path.match(/^\/convite\/([^/]+)$/);
+    if (inviteMatch) {
+        return { type: 'invite', uid: inviteMatch[1] };
+    }
+
+    return { type: 'app' };
+}
 
 // ============================================================
 // Cache local (localStorage) — apenas performance
@@ -84,6 +106,25 @@ function useOnlineStatus() {
 // ============================================================
 
 export default function App() {
+    const route = getRoute();
+
+    // Renderiza a página de convite sem autenticação
+    if (route.type === 'invite') {
+        return (
+            <div className="app-shell">
+                <InvitePage inviteUid={route.uid} />
+            </div>
+        );
+    }
+
+    return <MainApp />;
+}
+
+// ============================================================
+// App principal (autenticado)
+// ============================================================
+
+function MainApp() {
     const { user, loading: authLoading, logout, updateUserProfile } = useAuth();
     const isOnline = useOnlineStatus();
 
@@ -103,10 +144,10 @@ export default function App() {
     // Aplica um objeto de estado nos hooks
     // ----------------------------------------------------------
     function applyState(state) {
-        setCurrentWeek(state.currentWeek   ?? 1);
-        setCompletedDays(state.completedDays ?? []);
-        setUserProfile(state.profile         ?? null);
-        setCurrentPlanId(state.planId        ?? '5k');
+        setCurrentWeek(state.currentWeek    ?? 1);
+        setCompletedDays(state.completedDays  ?? []);
+        setUserProfile(state.profile          ?? null);
+        setCurrentPlanId(state.planId         ?? '5k');
     }
 
     // ----------------------------------------------------------
@@ -116,12 +157,17 @@ export default function App() {
         if (authLoading) return;
         if (!user) { setView('onboarding'); return; }
 
-        // Espelha o login do usuário no Sheets (fire-and-forget)
+        // Espelha login no Sheets (fire-and-forget)
         syncUserToSheets({
             uid:         user.uid,
             email:       user.email       || '',
             displayName: user.displayName || '',
         }).catch(() => {});
+
+        // Salva displayName no Firestore para página de convite
+        if (user.displayName) {
+            saveDisplayName(user.uid, user.displayName).catch(() => {});
+        }
 
         async function loadProgress() {
             // 1. Cache local → resposta imediata
@@ -160,13 +206,9 @@ export default function App() {
             planId:  currentPlanId,
         };
 
-        // Cache local imediato
         writeCache(user.uid, state);
-
-        // Firestore (fonte primária — SDK faz queue offline)
         saveProgressToCloud(user.uid, state);
 
-        // Sheets (espelho admin — fire-and-forget)
         syncProgressToSheets({
             uid:          user.uid,
             currentWeek,
@@ -224,7 +266,6 @@ export default function App() {
     const handleWorkoutComplete = useCallback(async (stats) => {
         if (!user) return;
 
-        // Marca o dia como concluído
         if (activeDayKey) {
             setCompletedDays(prev => {
                 if (prev.includes(activeDayKey)) return prev;
@@ -232,7 +273,6 @@ export default function App() {
             });
         }
 
-        // Registra data para streak
         const today = new Date().toISOString().slice(0, 10);
         registerToday();
 
@@ -251,13 +291,8 @@ export default function App() {
             calories:        stats?.calories        || 0,
         };
 
-        // Firestore (fonte primária)
         await saveWorkoutToCloud(user.uid, workoutData);
-
-        // Sheets (espelho admin) — fire-and-forget
         saveCompletedWorkout(workoutData).catch(() => {});
-
-        // Streak no Sheets — fire-and-forget
         syncStreakDateToSheets({ uid: user.uid, date: today }).catch(() => {});
 
     }, [activeDayKey, user, registerToday, currentPlanId, freeWorkout]);
@@ -346,6 +381,7 @@ export default function App() {
                 onChangeWeek={setCurrentWeek}
                 onOpenModeSelect={() => setShowModeSelect(true)}
                 userName={user.displayName || user.email}
+                userUid={user.uid}
                 onSwitchUser={handleLogout}
                 userProfile={userProfile}
                 user={user}
