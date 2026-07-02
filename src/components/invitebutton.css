@@ -1,0 +1,50 @@
+/* ============================================================
+   invitebutton.css
+   Estilos do botão de convite na tela principal.
+   ============================================================ */
+
+.invite-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    background: rgba(249, 115, 22, 0.06);
+    border: 1px solid rgba(249, 115, 22, 0.2);
+    border-radius: 16px;
+    padding: 14px 16px;
+    text-align: left;
+    transition: background 0.2s ease, transform 0.15s ease;
+    cursor: pointer;
+}
+
+.invite-btn:active {
+    background: rgba(249, 115, 22, 0.12);
+    transform: scale(0.98);
+}
+
+.invite-btn-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.invite-btn-text {
+    flex: 1;
+}
+
+.invite-btn-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: #f97316;
+    margin-bottom: 2px;
+}
+
+.invite-btn-sub {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.invite-btn-arrow {
+    font-size: 20px;
+    color: rgba(249, 115, 22, 0.5);
+    flex-shrink: 0;
+}
