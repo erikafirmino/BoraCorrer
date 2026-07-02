@@ -132,3 +132,25 @@
     font-size: 15px;
     font-weight: 600;
 }
+
+/* ============================================================
+   Modo embedded (aba da bottom nav)
+   ============================================================ */
+
+.calendar-page {
+    height: 100%;
+    overflow-y: auto;
+    background: var(--bg-primary, #0a0f1e);
+    padding: 24px 20px 80px;
+}
+
+.calendar-embedded {
+    background: transparent;
+}
+
+.calendar-page-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text-primary, #f0f4ff);
+    margin-bottom: 20px;
+}
