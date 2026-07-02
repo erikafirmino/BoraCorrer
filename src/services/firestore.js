@@ -4,8 +4,8 @@
 //
 // Coleções:
 //   users/{uid}            → dados privados (auth obrigatória)
-//   publicProfiles/{uid}   → dados públicos (leitura pública)
 //   users/{uid}/workouts   → histórico de treinos
+//   publicProfiles/{uid}   → dados públicos (leitura pública)
 // ============================================================
 
 import {
@@ -40,6 +40,7 @@ export async function loadProgressFromCloud(uid) {
 
 /**
  * Salva o progresso completo do usuário no Firestore.
+ * Inclui: semana, dias concluídos, perfil, plano, preferências e streak.
  */
 export async function saveProgressToCloud(uid, state) {
     try {
@@ -47,11 +48,17 @@ export async function saveProgressToCloud(uid, state) {
         await setDoc(
             ref,
             {
-                currentWeek:   state.currentWeek   ?? 1,
-                completedDays: state.completedDays ?? [],
-                profile:       state.profile       ?? null,
-                planId:        state.planId        ?? '5k',
-                updatedAt:     serverTimestamp()
+                currentWeek:      state.currentWeek      ?? 1,
+                completedDays:    state.completedDays    ?? [],
+                profile:          state.profile          ?? null,
+                planId:           state.planId           ?? '5k',
+                // Preferências (antes só no localStorage)
+                theme:            state.theme            ?? 'auto',
+                voiceEnabled:     state.voiceEnabled     ?? true,
+                remindersEnabled: state.remindersEnabled ?? false,
+                // Datas de streak (antes só no localStorage)
+                trainedDates:     state.trainedDates     ?? [],
+                updatedAt:        serverTimestamp()
             },
             { merge: true }
         );
@@ -61,13 +68,66 @@ export async function saveProgressToCloud(uid, state) {
 }
 
 // ============================================================
+// PREFERÊNCIAS (leitura rápida separada)
+// ============================================================
+
+/**
+ * Salva apenas as preferências do usuário (tema, voz, lembretes).
+ * Mais eficiente que salvar o estado completo ao trocar tema.
+ */
+export async function savePreferencesToCloud(uid, prefs) {
+    try {
+        const ref = doc(db, 'users', uid);
+        await setDoc(
+            ref,
+            {
+                theme:            prefs.theme            ?? 'auto',
+                voiceEnabled:     prefs.voiceEnabled     ?? true,
+                remindersEnabled: prefs.remindersEnabled ?? false,
+                updatedAt:        serverTimestamp()
+            },
+            { merge: true }
+        );
+    } catch (err) {
+        console.warn('Firestore: erro ao salvar preferências', err);
+    }
+}
+
+// ============================================================
+// STREAK — datas de treino
+// ============================================================
+
+/**
+ * Adiciona uma data de treino ao array trainedDates no Firestore.
+ * Evita duplicatas verificando antes de salvar.
+ */
+export async function addTrainedDate(uid, date) {
+    try {
+        const ref  = doc(db, 'users', uid);
+        const snap = await getDoc(ref);
+
+        const existing   = snap.exists() ? (snap.data().trainedDates ?? []) : [];
+        const alreadyHas = existing.includes(date);
+
+        if (!alreadyHas) {
+            await setDoc(
+                ref,
+                { trainedDates: [...existing, date], updatedAt: serverTimestamp() },
+                { merge: true }
+            );
+        }
+    } catch (err) {
+        console.warn('Firestore: erro ao adicionar data de streak', err);
+    }
+}
+
+// ============================================================
 // PERFIL PÚBLICO (leitura sem autenticação)
 // ============================================================
 
 /**
- * Salva dados públicos do usuário em publicProfiles/{uid}.
+ * Salva dados públicos em publicProfiles/{uid}.
  * Esta coleção tem leitura pública — usada pela página de convite.
- * Deve ser chamada ao logar e ao atualizar o nome.
  */
 export async function savePublicProfile(uid, { displayName, currentWeek, completedDays, planId }) {
     try {
@@ -116,10 +176,7 @@ export async function saveUserProfile(uid, profile) {
         const ref = doc(db, 'users', uid);
         await setDoc(
             ref,
-            {
-                profile,
-                updatedAt: serverTimestamp()
-            },
+            { profile, updatedAt: serverTimestamp() },
             { merge: true }
         );
     } catch (err) {
