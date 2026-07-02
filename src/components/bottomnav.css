@@ -13,10 +13,9 @@
     background: var(--bg-secondary, #111827);
     border-top: 1px solid var(--border-color, #2a3650);
     display: flex;
-    align-items: center;
+    align-items: stretch;
     justify-content: space-around;
-    z-index: 100;
-    backdrop-filter: blur(12px);
+    z-index: 200;
     padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
@@ -27,40 +26,42 @@
     align-items: center;
     justify-content: center;
     gap: 3px;
-    height: 100%;
     background: transparent;
-    color: var(--text-muted, #4d5f80);
-    transition: color 0.2s ease, transform 0.15s ease;
+    color: #4d5f80;
     position: relative;
+    padding: 0;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .bottom-nav-btn:active {
-    transform: scale(0.92);
+    transform: scale(0.88);
 }
 
-.bottom-nav-btn.active {
-    color: var(--accent, #f97316);
-}
-
-.bottom-nav-btn.active::before {
-    content: '';
+/* Indicador laranja no topo do botão ativo */
+.bottom-nav-indicator {
     position: absolute;
     top: 0;
     left: 50%;
     transform: translateX(-50%);
-    width: 32px;
+    width: 28px;
     height: 3px;
-    background: var(--accent, #f97316);
+    background: #f97316;
     border-radius: 0 0 4px 4px;
 }
 
 .bottom-nav-icon {
-    font-size: 20px;
+    font-size: 22px;
     line-height: 1;
+    display: block;
 }
 
 .bottom-nav-label {
     font-size: 10px;
     font-weight: 600;
     letter-spacing: 0.2px;
+    color: #4d5f80;
+    line-height: 1;
 }
