@@ -1,3 +1,11 @@
+// ============================================================
+// calendar.jsx
+// Calendário de histórico de treinos.
+// Suporta dois modos:
+//   - overlay (padrão): modal deslizante
+//   - embedded: renderiza direto na página sem overlay
+// ============================================================
+
 import React, { useState } from 'react';
 import './calendar.css';
 
@@ -17,17 +25,15 @@ function getTrainedDates() {
     }
 }
 
-export default function Calendar({ onClose }) {
-    const today = new Date();
-    const [year, setYear] = useState(today.getFullYear());
+function CalendarContent({ onClose, embedded }) {
+    const today  = new Date();
+    const [year,  setYear]  = useState(today.getFullYear());
     const [month, setMonth] = useState(today.getMonth());
 
     const trainedDates = new Set(getTrainedDates());
-
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-    const todayStr = today.toISOString().slice(0, 10);
+    const firstDay     = new Date(year, month, 1).getDay();
+    const daysInMonth  = new Date(year, month + 1, 0).getDate();
+    const todayStr     = today.toISOString().slice(0, 10);
 
     function prevMonth() {
         if (month === 0) { setMonth(11); setYear(y => y - 1); }
@@ -44,47 +50,71 @@ export default function Calendar({ onClose }) {
     for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
     return (
-        <div className="calendar-overlay">
-            <div className="calendar-sheet">
-                <div className="calendar-header">
-                    <button className="cal-nav" onClick={prevMonth}>‹</button>
-                    <span className="cal-title">{MONTH_NAMES[month]} {year}</span>
-                    <button className="cal-nav" onClick={nextMonth}>›</button>
+        <div className={embedded ? 'calendar-embedded' : 'calendar-sheet'}>
+
+            {embedded && (
+                <h2 className="calendar-page-title">📅 Histórico</h2>
+            )}
+
+            <div className="calendar-header">
+                <button className="cal-nav" onClick={prevMonth}>‹</button>
+                <span className="cal-title">{MONTH_NAMES[month]} {year}</span>
+                <button className="cal-nav" onClick={nextMonth}>›</button>
+            </div>
+
+            <div className="cal-day-names">
+                {DAY_NAMES.map(d => (
+                    <div key={d} className="cal-day-name">{d}</div>
+                ))}
+            </div>
+
+            <div className="cal-grid">
+                {cells.map((day, idx) => {
+                    if (!day) return <div key={`empty-${idx}`} className="cal-cell empty" />;
+
+                    const dateStr  = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const isTrained = trainedDates.has(dateStr);
+                    const isToday  = dateStr === todayStr;
+
+                    return (
+                        <div
+                            key={dateStr}
+                            className={`cal-cell ${isTrained ? 'trained' : ''} ${isToday ? 'today' : ''}`}
+                        >
+                            <span>{day}</span>
+                            {isTrained && <div className="cal-dot" />}
+                        </div>
+                    );
+                })}
+            </div>
+
+            <div className="cal-legend">
+                <div className="cal-legend-item">
+                    <div className="cal-dot" /> Treino realizado
                 </div>
+            </div>
 
-                <div className="cal-day-names">
-                    {DAY_NAMES.map(d => (
-                        <div key={d} className="cal-day-name">{d}</div>
-                    ))}
-                </div>
-
-                <div className="cal-grid">
-                    {cells.map((day, idx) => {
-                        if (!day) return <div key={`empty-${idx}`} className="cal-cell empty" />;
-
-                        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                        const isTrained = trainedDates.has(dateStr);
-                        const isToday = dateStr === todayStr;
-
-                        return (
-                            <div
-                                key={dateStr}
-                                className={`cal-cell ${isTrained ? 'trained' : ''} ${isToday ? 'today' : ''}`}
-                            >
-                                <span>{day}</span>
-                                {isTrained && <div className="cal-dot" />}
-                            </div>
-                        );
-                    })}
-                </div>
-
-                <div className="cal-legend">
-                    <div className="cal-legend-item">
-                        <div className="cal-dot" /> Treino realizado
-                    </div>
-                </div>
-
+            {!embedded && (
                 <button className="cal-close" onClick={onClose}>Fechar</button>
+            )}
+
+        </div>
+    );
+}
+
+export default function Calendar({ onClose, embedded = false }) {
+    if (embedded) {
+        return (
+            <div className="calendar-page">
+                <CalendarContent onClose={onClose} embedded />
+            </div>
+        );
+    }
+
+    return (
+        <div className="calendar-overlay" onClick={onClose}>
+            <div onClick={e => e.stopPropagation()}>
+                <CalendarContent onClose={onClose} embedded={false} />
             </div>
         </div>
     );
