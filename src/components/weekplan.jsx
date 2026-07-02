@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { getTotalDurationSeconds, TOTAL_WEEKS, DAYS_PER_WEEK } from '../data/plans.js';
-import { useStreak } from '../hooks/usestreak.js';
-import { useTheme } from '../hooks/usetheme.js';
-import { usePushNotification } from '../hooks/usepushnotification.js';
-import { useAchievements, getMotivationalPhrase } from '../hooks/useachievements.js';
-import { getPersonalizedMessage } from './profilesetup.jsx';
-import Calendar from './calendar.jsx';
+import { useStreak }                                            from '../hooks/usestreak.js';
+import { useTheme }                                             from '../hooks/usetheme.js';
+import { usePushNotification }                                  from '../hooks/usepushnotification.js';
+import { useAchievements, getMotivationalPhrase }               from '../hooks/useachievements.js';
+import { getPersonalizedMessage }                               from './profilesetup.jsx';
+import Calendar     from './calendar.jsx';
 import ProfileModal from './profilemodal.jsx';
 import HistoryChart from './historychart.jsx';
+import InviteButton from './invitebutton.jsx';
 import './weekplan.css';
 
 function formatDuration(totalSeconds) {
@@ -70,6 +71,7 @@ export default function WeekPlan({
     onChangeWeek,
     onOpenModeSelect,
     userName,
+    userUid,
     onSwitchUser,
     userProfile,
     user,
@@ -184,6 +186,11 @@ export default function WeekPlan({
 
                 {/* Botão Spotify */}
                 <SpotifyButton />
+
+                {/* Botão de convite */}
+                {userUid && (
+                    <InviteButton uid={userUid} userName={userName} />
+                )}
 
                 <div className="days-list">
                     {days.map((day) => {
