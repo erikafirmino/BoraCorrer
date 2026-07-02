@@ -25,7 +25,7 @@ import { db } from './firebase.js';
  */
 export async function loadProgressFromCloud(uid) {
     try {
-        const ref = doc(db, 'users', uid);
+        const ref  = doc(db, 'users', uid);
         const snap = await getDoc(ref);
         if (snap.exists()) return snap.data();
         return null;
@@ -79,6 +79,47 @@ export async function saveUserProfile(uid, profile) {
         );
     } catch (err) {
         console.warn('Firestore: erro ao salvar perfil', err);
+    }
+}
+
+// ============================================================
+// PERFIL PÚBLICO (para página de convite)
+// ============================================================
+
+/**
+ * Carrega dados públicos de um usuário pelo UID.
+ * Retorna apenas nome, progresso e semana — sem dados sensíveis.
+ */
+export async function loadPublicProfile(uid) {
+    try {
+        const ref  = doc(db, 'users', uid);
+        const snap = await getDoc(ref);
+        if (!snap.exists()) return null;
+
+        const data = snap.data();
+
+        // Retorna apenas campos públicos
+        return {
+            currentWeek:   data.currentWeek   ?? 1,
+            completedDays: data.completedDays ?? [],
+            planId:        data.planId        ?? '5k',
+            displayName:   data.displayName   ?? null,
+        };
+    } catch (err) {
+        console.warn('Firestore: erro ao carregar perfil público', err);
+        return null;
+    }
+}
+
+/**
+ * Salva o displayName do usuário no Firestore para uso na página de convite.
+ */
+export async function saveDisplayName(uid, displayName) {
+    try {
+        const ref = doc(db, 'users', uid);
+        await setDoc(ref, { displayName }, { merge: true });
+    } catch (err) {
+        console.warn('Firestore: erro ao salvar displayName', err);
     }
 }
 
