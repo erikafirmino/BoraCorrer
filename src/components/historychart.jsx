@@ -41,7 +41,7 @@ function BarChart({ data, maxValue, color = '#f97316', label }) {
     );
 }
 
-export default function HistoryChart({ completedDays, onClose }) {
+export default function HistoryChart({ completedDays, onClose, embedded = false }) {
     const [tab, setTab] = useState('weeks');
 
     const trainedDates = getTrainedDates();
@@ -76,10 +76,13 @@ export default function HistoryChart({ completedDays, onClose }) {
     const bestDay = weekdayData.reduce((best, d) => d.value > best.value ? d : best, { value: 0 });
 
     return (
-        <div className="history-overlay" onClick={onClose}>
-            <div className="history-sheet" onClick={e => e.stopPropagation()}>
-                <div className="history-handle" />
-                <h2 className="history-title">📊 Histórico</h2>
+        <div className={embedded ? 'history-page' : 'history-overlay'} onClick={embedded ? undefined : onClose}>
+            <div className={embedded ? '' : 'history-sheet'} onClick={e => e.stopPropagation()}>
+
+                {embedded
+                    ? <h2 className="history-page-title">📊 Histórico</h2>
+                    : <><div className="history-handle" /><h2 className="history-title">📊 Histórico</h2></>
+                }
 
                 {/* Stats cards */}
                 <div className="stats-row">
@@ -145,7 +148,9 @@ export default function HistoryChart({ completedDays, onClose }) {
                     </div>
                 )}
 
-                <button className="history-close" onClick={onClose}>Fechar</button>
+                <button className="history-close" onClick={onClose}>
+                    {embedded ? '← Voltar' : 'Fechar'}
+                </button>
             </div>
         </div>
     );
