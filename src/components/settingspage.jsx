@@ -1,10 +1,10 @@
 // ============================================================
 // settingspage.jsx
 // Tela de configurações do BoraCorrer.
+// Preferências (tema, voz, lembretes) vêm do Firestore via props.
 // ============================================================
 
 import React, { useState } from 'react';
-import { useTheme }            from '../hooks/usetheme.js';
 import { usePushNotification } from '../hooks/usepushnotification.js';
 import InviteButton            from './invitebutton.jsx';
 import './settingspage.css';
@@ -61,16 +61,16 @@ export default function SettingsPage({
     userProfile,
     currentPlanId,
     completedDays,
+    theme,
+    voiceEnabled,
+    remindersEnabled,
+    onSavePreference,
     onUpdateName,
     onLogout,
     onResetProfile,
 }) {
-    const { themeMode, setMode }                       = useTheme();
-    const { isSupported, isEnabled, scheduleReminder } = usePushNotification();
+    const { isSupported, scheduleReminder } = usePushNotification();
 
-    const [voiceEnabled, setVoiceEnabled] = useState(
-        () => localStorage.getItem('boracorrer-voice') !== 'false'
-    );
     const [editingName,  setEditingName]  = useState(false);
     const [nameInput,    setNameInput]    = useState(user?.displayName || '');
     const [savingName,   setSavingName]   = useState(false);
@@ -81,11 +81,6 @@ export default function SettingsPage({
     const totalWorkouts = completedDays.length;
     const planLabel     = currentPlanId === '10k' ? '5K → 10K' : 'Zero → 5K';
 
-    function handleVoiceToggle(val) {
-        setVoiceEnabled(val);
-        localStorage.setItem('boracorrer-voice', String(val));
-    }
-
     async function handleSaveName() {
         if (!nameInput.trim()) return;
         setSavingName(true);
@@ -94,6 +89,12 @@ export default function SettingsPage({
         setNameSaved(true);
         setEditingName(false);
         setTimeout(() => setNameSaved(false), 2000);
+    }
+
+    async function handleReminderToggle() {
+        const newVal = !remindersEnabled;
+        if (newVal) await scheduleReminder();
+        onSavePreference('remindersEnabled', newVal);
     }
 
     const THEME_OPTIONS = [
@@ -106,7 +107,7 @@ export default function SettingsPage({
         <div className="settings-page">
             <div className="settings-scroll">
 
-                {/* Título da tela */}
+                {/* Título */}
                 <h1 className="settings-title">Configurações</h1>
 
                 {/* Cabeçalho de perfil */}
@@ -208,14 +209,14 @@ export default function SettingsPage({
                         {THEME_OPTIONS.map(opt => (
                             <button
                                 key={opt.value}
-                                className={`settings-theme-option ${themeMode === opt.value ? 'active' : ''}`}
-                                onClick={() => setMode(opt.value)}
+                                className={`settings-theme-option ${theme === opt.value ? 'active' : ''}`}
+                                onClick={() => onSavePreference('theme', opt.value)}
                             >
                                 <div>
                                     <div className="settings-theme-label">{opt.label}</div>
                                     <div className="settings-theme-sub">{opt.sub}</div>
                                 </div>
-                                {themeMode === opt.value && (
+                                {theme === opt.value && (
                                     <div className="settings-theme-check">✓</div>
                                 )}
                             </button>
@@ -231,7 +232,12 @@ export default function SettingsPage({
                         sublabel={voiceEnabled
                             ? '"Hora de correr!" e "Hora de caminhar!" ativados'
                             : 'Apenas bipes sonoros'}
-                        right={<Toggle value={voiceEnabled} onChange={handleVoiceToggle} />}
+                        right={
+                            <Toggle
+                                value={voiceEnabled}
+                                onChange={val => onSavePreference('voiceEnabled', val)}
+                            />
+                        }
                     />
                 </SettingsSection>
 
@@ -241,10 +247,15 @@ export default function SettingsPage({
                         <SettingsRow
                             icon="🔔"
                             label="Lembretes de treino"
-                            sublabel={isEnabled
+                            sublabel={remindersEnabled
                                 ? 'Você receberá lembretes para treinar'
                                 : 'Ativar notificações push no dispositivo'}
-                            right={<Toggle value={isEnabled} onChange={scheduleReminder} />}
+                            right={
+                                <Toggle
+                                    value={remindersEnabled}
+                                    onChange={handleReminderToggle}
+                                />
+                            }
                         />
                     </SettingsSection>
                 )}
