@@ -1,25 +1,35 @@
+// ============================================================
+// weekplan.jsx
+// Tela principal do BoraCorrer — Plano semanal.
+// Header limpo: apenas streak + avatar.
+// Ícones de calendário, histórico e configurações → Bottom Nav.
+// ============================================================
+
 import React, { useState } from 'react';
 import { getTotalDurationSeconds, TOTAL_WEEKS, DAYS_PER_WEEK } from '../data/plans.js';
-import { useStreak }                                            from '../hooks/usestreak.js';
-import { useTheme }                                             from '../hooks/usetheme.js';
-import { usePushNotification }                                  from '../hooks/usepushnotification.js';
-import { useAchievements, getMotivationalPhrase }               from '../hooks/useachievements.js';
-import { getPersonalizedMessage }                               from './profilesetup.jsx';
-import Calendar     from './calendar.jsx';
+import { useStreak }                            from '../hooks/usestreak.js';
+import { useAchievements, getMotivationalPhrase } from '../hooks/useachievements.js';
+import { getPersonalizedMessage }               from './profilesetup.jsx';
 import ProfileModal from './profilemodal.jsx';
-import HistoryChart from './historychart.jsx';
-import InviteButton from './invitebutton.jsx';
 import './weekplan.css';
+
+// ============================================================
+// Helpers
+// ============================================================
 
 function formatDuration(totalSeconds) {
     const minutes = Math.round(totalSeconds / 60);
     return `${minutes} min`;
 }
 
+// ============================================================
+// Sub-componentes
+// ============================================================
+
 function OverallProgress({ completedDays, totalWeeks }) {
-    const totalDays = totalWeeks * DAYS_PER_WEEK;
+    const totalDays      = totalWeeks * DAYS_PER_WEEK;
     const completedCount = completedDays.length;
-    const percent = Math.round((completedCount / totalDays) * 100);
+    const percent        = Math.round((completedCount / totalDays) * 100);
 
     return (
         <div className="overall-progress">
@@ -30,7 +40,10 @@ function OverallProgress({ completedDays, totalWeeks }) {
                 </span>
             </div>
             <div className="overall-progress-bar">
-                <div className="overall-progress-fill" style={{ width: `${percent}%` }} />
+                <div
+                    className="overall-progress-fill"
+                    style={{ width: `${percent}%` }}
+                />
             </div>
         </div>
     );
@@ -38,17 +51,10 @@ function OverallProgress({ completedDays, totalWeeks }) {
 
 function SpotifyButton() {
     function openSpotify() {
-        // Tenta abrir o app do Spotify com playlist de corrida
-        const spotifyUrl = 'spotify:playlist:37i9dQZF1DX70RN3TfWWJh'; // Running playlist
-        const webUrl = 'https://open.spotify.com/playlist/37i9dQZF1DX70RN3TfWWJh';
-
-        // Tenta abrir o app nativo primeiro
-        window.location = spotifyUrl;
-
-        // Fallback para web após 500ms
-        setTimeout(() => {
-            window.open(webUrl, '_blank');
-        }, 500);
+        const spotifyUrl = 'spotify:playlist:37i9dQZF1DX70RN3TfWWJh';
+        const webUrl     = 'https://open.spotify.com/playlist/37i9dQZF1DX70RN3TfWWJh';
+        window.location  = spotifyUrl;
+        setTimeout(() => window.open(webUrl, '_blank'), 500);
     }
 
     return (
@@ -61,6 +67,10 @@ function SpotifyButton() {
     );
 }
 
+// ============================================================
+// Componente principal
+// ============================================================
+
 export default function WeekPlan({
     weekPlan,
     completedDays,
@@ -72,21 +82,17 @@ export default function WeekPlan({
     onOpenModeSelect,
     userName,
     userUid,
-    onSwitchUser,
     userProfile,
     user,
-    onUpdateName
+    onUpdateName,
 }) {
-    const days = [1, 2, 3];
-    const { streak } = useStreak(completedDays);
-    const { themeIcon, themeLabel, toggleTheme } = useTheme();
-    const { isSupported, isEnabled, scheduleReminder } = usePushNotification();
+    const days         = [1, 2, 3];
+    const { streak }   = useStreak(completedDays);
     const achievements = useAchievements(completedDays, streak);
-    const [showCalendar, setShowCalendar] = useState(false);
-    const [showProfile, setShowProfile] = useState(false);
-    const [showHistory, setShowHistory] = useState(false);
 
-    const firstName = userName ? userName.split(' ')[0] : '';
+    const [showProfile, setShowProfile] = useState(false);
+
+    const firstName       = userName ? userName.split(' ')[0] : '';
     const motivationalMsg = completedDays.length > 0
         ? getMotivationalPhrase(completedDays)
         : getPersonalizedMessage(userProfile);
@@ -94,67 +100,51 @@ export default function WeekPlan({
     return (
         <div className="weekplan-container">
 
-            {/* HERO */}
+            {/* ======== HERO ======== */}
             <div className="weekplan-hero">
+
+                {/* Top bar: streak + avatar */}
                 <div className="weekplan-topbar">
                     <div className="streak-badge">
                         🔥 {streak} {streak === 1 ? 'dia seguido' : 'dias seguidos'}
                     </div>
-                    <div className="topbar-actions">
-                        {isSupported && (
-                            <button
-                                className={`topbar-btn ${isEnabled ? 'active' : ''}`}
-                                onClick={scheduleReminder}
-                                title={isEnabled ? 'Lembretes ativos' : 'Ativar lembretes'}
-                            >
-                                {isEnabled ? '🔔' : '🔕'}
-                            </button>
-                        )}
-                        <button className="topbar-btn" onClick={() => setShowCalendar(true)} title="Calendário">
-                            📅
-                        </button>
-                        <button className="topbar-btn" onClick={() => setShowHistory(true)} title="Histórico">
-                            📊
-                        </button>
-                        <button
-                            className="theme-toggle"
-                            onClick={toggleTheme}
-                            title={`Tema: ${themeLabel}`}
-                        >
-                            {themeIcon}
-                        </button>
+
+                    {/* Avatar clicável — abre modal de perfil */}
+                    <button
+                        className="topbar-avatar-btn"
+                        onClick={() => setShowProfile(true)}
+                        title="Ver perfil"
+                    >
+                        <div className="topbar-avatar">
+                            {(firstName || '?')[0].toUpperCase()}
+                        </div>
+                    </button>
+                </div>
+
+                {/* Saudação */}
+                <div className="user-greeting-block">
+                    <div className="user-greeting">Olá, {firstName}! 👋</div>
+                    <div className="user-sub">
+                        {achievements.unlocked.length} conquista{achievements.unlocked.length !== 1 ? 's' : ''} · toque no avatar
                     </div>
                 </div>
 
-                <div className="user-row">
-                    <button className="user-greeting-btn" onClick={() => setShowProfile(true)}>
-                        <div className="user-avatar">
-                            {(firstName || '?')[0].toUpperCase()}
-                        </div>
-                        <div>
-                            <div className="user-greeting">Olá, {firstName}! 👋</div>
-                            <div className="user-sub">
-                                {achievements.unlocked.length} conquista{achievements.unlocked.length !== 1 ? 's' : ''} · ver perfil
-                            </div>
-                        </div>
-                    </button>
-                    <button className="switch-user-btn" onClick={onSwitchUser}>
-                        Sair
-                    </button>
-                </div>
-
+                {/* Card de dica motivacional */}
                 {motivationalMsg && (
                     <div className="motivational-msg">
                         💡 {motivationalMsg}
                     </div>
                 )}
 
+                {/* Navegação semanal */}
                 <header className="weekplan-header">
                     <button
                         className="week-nav-btn"
                         disabled={currentWeek <= 1}
                         onClick={() => onChangeWeek(currentWeek - 1)}
-                    >‹</button>
+                    >
+                        ‹
+                    </button>
                     <div className="week-title-block">
                         <h1>{weekPlan.title}</h1>
                         <p>{weekPlan.description}</p>
@@ -163,12 +153,17 @@ export default function WeekPlan({
                         className="week-nav-btn"
                         disabled={currentWeek >= totalWeeks}
                         onClick={() => onChangeWeek(currentWeek + 1)}
-                    >›</button>
+                    >
+                        ›
+                    </button>
                 </header>
+
             </div>
 
-            {/* BODY */}
+            {/* ======== BODY ======== */}
             <div className="weekplan-body">
+
+                {/* Plano ativo + trocar */}
                 <div className="plan-mode-row">
                     <div className="plan-mode-badge">
                         {currentPlanId === '5k' ? '🏃 Plano 5K' : '🏆 Plano 10K'}
@@ -178,29 +173,27 @@ export default function WeekPlan({
                     </button>
                 </div>
 
-                <div className="week-progress-label">
-                    Semana {currentWeek} de {totalWeeks}
-                </div>
-
+                {/* Progresso geral */}
                 <OverallProgress completedDays={completedDays} totalWeeks={totalWeeks} />
 
-                {/* Botão Spotify */}
+                {/* Spotify */}
                 <SpotifyButton />
 
-                {/* Botão de convite */}
-                {userUid && (
-                    <InviteButton uid={userUid} userName={userName} />
-                )}
-
+                {/* Cards de treino */}
                 <div className="days-list">
                     {days.map((day) => {
                         const dayKey = `${currentWeek}-${day}`;
                         const isDone = completedDays.includes(dayKey);
 
                         return (
-                            <div className={`day-card ${isDone ? 'day-done' : ''}`} key={dayKey}>
+                            <div
+                                className={`day-card ${isDone ? 'day-done' : ''}`}
+                                key={dayKey}
+                            >
                                 <div className="day-info">
-                                    <div className="day-checkbox">{isDone ? '✓' : day}</div>
+                                    <div className="day-checkbox">
+                                        {isDone ? '✓' : day}
+                                    </div>
                                     <div>
                                         <div className="day-name">Dia {day}</div>
                                         <div className="day-duration">
@@ -218,10 +211,10 @@ export default function WeekPlan({
                         );
                     })}
                 </div>
+
             </div>
 
-            {showCalendar && <Calendar onClose={() => setShowCalendar(false)} />}
-            {showHistory && <HistoryChart completedDays={completedDays} onClose={() => setShowHistory(false)} />}
+            {/* Modal de perfil */}
             {showProfile && (
                 <ProfileModal
                     user={user}
@@ -230,6 +223,7 @@ export default function WeekPlan({
                     onClose={() => setShowProfile(false)}
                 />
             )}
+
         </div>
     );
 }
