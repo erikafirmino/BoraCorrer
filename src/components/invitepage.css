@@ -1,0 +1,307 @@
+/* ============================================================
+   invitepage.css
+   Estilos da página de convite pública.
+   ============================================================ */
+
+.invite-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #0a0f1e;
+    color: #f0f4ff;
+    font-family: 'Inter', 'Segoe UI', Roboto, -apple-system, sans-serif;
+    padding-bottom: 40px;
+}
+
+/* ============================================================
+   HERO
+   ============================================================ */
+
+.invite-hero {
+    width: 100%;
+    max-width: 480px;
+    background: linear-gradient(160deg, #0f1e3d 0%, #1e3a8a 100%);
+    padding: 48px 24px 36px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.invite-hero-glow {
+    position: absolute;
+    top: -60px;
+    right: -60px;
+    width: 220px;
+    height: 220px;
+    background: #f97316;
+    opacity: 0.07;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.invite-logo {
+    width: 72px;
+    height: 72px;
+    border-radius: 20px;
+    margin-bottom: 14px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.invite-logo-loading {
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
+    animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.6; transform: scale(0.93); }
+}
+
+.invite-app-name {
+    font-size: 28px;
+    font-weight: 900;
+    color: #ffffff;
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+}
+
+.invite-tagline {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.55);
+    line-height: 1.5;
+}
+
+/* ============================================================
+   CARD DE PROGRESSO
+   ============================================================ */
+
+.invite-card {
+    width: calc(100% - 32px);
+    max-width: 448px;
+    background: #1a2236;
+    border: 1px solid #2a3650;
+    border-radius: 20px;
+    padding: 20px;
+    margin-top: -20px;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+}
+
+.invite-card-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.invite-avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #f97316, #f43f5e);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 800;
+    color: #ffffff;
+    flex-shrink: 0;
+}
+
+.invite-inviter-name {
+    font-size: 17px;
+    font-weight: 800;
+    color: #ffffff;
+    margin-bottom: 4px;
+}
+
+.invite-inviter-progress {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.55);
+    line-height: 1.4;
+}
+
+.invite-divider {
+    height: 1px;
+    background: #2a3650;
+    margin-bottom: 20px;
+}
+
+.invite-stats-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.progress-ring {
+    flex-shrink: 0;
+}
+
+.invite-stats-badges {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+}
+
+.invite-stat-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 12px;
+    padding: 10px 12px;
+}
+
+.invite-stat-emoji {
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.invite-stat-value {
+    font-size: 15px;
+    font-weight: 800;
+    color: #f97316;
+}
+
+.invite-stat-label {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+/* ============================================================
+   FUNCIONALIDADES
+   ============================================================ */
+
+.invite-features {
+    width: calc(100% - 32px);
+    max-width: 448px;
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.invite-feature {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.4;
+}
+
+.invite-feature-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+/* ============================================================
+   CTA
+   ============================================================ */
+
+.invite-cta-section {
+    width: calc(100% - 32px);
+    max-width: 448px;
+    margin-top: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.invite-cta-btn {
+    display: block;
+    width: 100%;
+    padding: 18px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #f97316, #f43f5e);
+    color: #ffffff;
+    font-size: 17px;
+    font-weight: 800;
+    text-align: center;
+    text-decoration: none;
+    box-shadow: 0 6px 24px rgba(249, 115, 22, 0.45);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    letter-spacing: -0.3px;
+}
+
+.invite-cta-btn:active {
+    transform: scale(0.97);
+    box-shadow: 0 3px 12px rgba(249, 115, 22, 0.35);
+}
+
+.invite-cta-sub {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.35);
+    text-align: center;
+}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+
+.invite-footer {
+    margin-top: 32px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.2);
+    text-align: center;
+}
+
+/* ============================================================
+   ESTADOS: LOADING / NOT FOUND
+   ============================================================ */
+
+.invite-loading {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    min-height: 100vh;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 15px;
+}
+
+.invite-not-found {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    min-height: 100vh;
+    padding: 32px;
+    text-align: center;
+}
+
+.invite-not-found-icon {
+    font-size: 56px;
+}
+
+.invite-not-found h2 {
+    font-size: 22px;
+    font-weight: 800;
+    color: #ffffff;
+}
+
+.invite-not-found p {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.5);
+    line-height: 1.5;
+}
