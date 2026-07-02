@@ -8,6 +8,7 @@
     flex-direction: column;
     overflow-y: auto;
     background: var(--bg-primary);
+    padding-bottom: 64px; /* espaço para a Bottom Nav */
 }
 
 /* ============================================================
@@ -18,7 +19,7 @@
     background: var(--gradient-hero);
     padding: 20px 20px 28px;
     position: relative;
-    overflow: visible; /* era hidden — impedia o texto de crescer */
+    overflow: visible;
 }
 
 .weekplan-hero::before {
@@ -34,35 +35,22 @@
     pointer-events: none;
 }
 
-.weekplan-hero::after {
-    content: '';
-    position: absolute;
-    bottom: -20px;
-    left: 30%;
-    width: 100px;
-    height: 100px;
-    background: var(--accent);
-    opacity: 0.05;
-    border-radius: 50%;
-    pointer-events: none;
-}
-
 /* ============================================================
-   TOP BAR
+   TOP BAR — streak + avatar
    ============================================================ */
 
 .weekplan-topbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 18px;
     position: relative;
     z-index: 1;
 }
 
 .streak-badge {
     background: rgba(249, 115, 22, 0.15);
-    color: var(--accent-light);
+    color: var(--accent-light, #fb923c);
     font-size: 13px;
     font-weight: 700;
     padding: 7px 14px;
@@ -71,117 +59,63 @@
     backdrop-filter: blur(8px);
 }
 
-.topbar-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.topbar-btn {
-    background: rgba(255, 255, 255, 0.1);
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    font-size: 17px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    transition: background 0.2s;
-}
-
-.topbar-btn:active {
-    background: rgba(255, 255, 255, 0.2);
-}
-
-.topbar-btn.active {
-    background: rgba(249, 115, 22, 0.2);
-    border-color: rgba(249, 115, 22, 0.4);
-}
-
-.theme-toggle {
-    background: rgba(255, 255, 255, 0.1);
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    font-size: 17px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* ============================================================
-   GREETING / USUÁRIO
-   ============================================================ */
-
-.user-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16px;
-    position: relative;
-    z-index: 1;
-}
-
-.user-greeting-btn {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+.topbar-avatar-btn {
     background: transparent;
-    text-align: left;
+    padding: 0;
+    border: none;
 }
 
-.user-avatar {
-    width: 42px;
-    height: 42px;
-    border-radius: 14px;
+.topbar-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 13px;
     background: linear-gradient(135deg, #f97316, #f43f5e);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
-    font-weight: 800;
-    color: #ffffff;
-    flex-shrink: 0;
-}
-
-.user-greeting {
     font-size: 17px;
     font-weight: 800;
     color: #ffffff;
-    line-height: 1.2;
-}
-
-.user-sub {
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.4);
-    margin-top: 2px;
-}
-
-.switch-user-btn {
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.5);
-    background: transparent;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    padding-bottom: 1px;
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.35);
 }
 
 /* ============================================================
-   MENSAGEM MOTIVACIONAL
+   SAUDAÇÃO
+   ============================================================ */
+
+.user-greeting-block {
+    margin-bottom: 14px;
+    position: relative;
+    z-index: 1;
+}
+
+.user-greeting {
+    font-size: 22px;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.2;
+    margin-bottom: 3px;
+}
+
+.user-sub {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+/* ============================================================
+   CARD DE DICA — contraste melhorado
    ============================================================ */
 
 .motivational-msg {
-    background: rgba(255, 255, 255, 0.07);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: 12px;
-    padding: 10px 14px;
+    padding: 11px 14px;
     font-size: 13px;
-    color: rgba(255, 255, 255, 0.7);
-    line-height: 1.4;
-    margin-bottom: 16px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.92); /* antes era 0.7 — agora bem mais legível */
+    line-height: 1.5;
+    margin-bottom: 18px;
     position: relative;
     z-index: 1;
 }
@@ -211,16 +145,21 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: background 0.2s;
 }
 
 .week-nav-btn:disabled {
     opacity: 0.25;
 }
 
+.week-nav-btn:active {
+    background: rgba(255, 255, 255, 0.2);
+}
+
 .week-title-block {
     text-align: center;
     flex: 1;
-    min-width: 0; /* permite que o flex item quebre texto */
+    min-width: 0;
 }
 
 .week-title-block h1 {
@@ -244,24 +183,46 @@
 }
 
 /* ============================================================
-   BODY (abaixo do hero)
+   BODY
    ============================================================ */
 
 .weekplan-body {
-    padding: 20px 16px 32px;
+    padding: 20px 16px 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
 }
 
-.week-progress-label {
-    text-align: center;
-    color: var(--text-muted);
-    font-size: 12px;
+/* ============================================================
+   PLANO / MODO
+   ============================================================ */
+
+.plan-mode-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.plan-mode-badge {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent, #f97316);
+    background: rgba(249, 115, 22, 0.1);
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(249, 115, 22, 0.2);
+}
+
+.plan-mode-btn {
+    font-size: 13px;
     font-weight: 600;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-    margin-bottom: -4px;
+    color: var(--text-muted, #4d5f80);
+    background: transparent;
+    transition: color 0.2s;
+}
+
+.plan-mode-btn:active {
+    color: var(--accent, #f97316);
 }
 
 /* ============================================================
@@ -311,35 +272,7 @@
 }
 
 /* ============================================================
-   PLANO / MODO
-   ============================================================ */
-
-.plan-mode-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: -4px;
-}
-
-.plan-mode-badge {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--accent, #f97316);
-    background: rgba(249, 115, 22, 0.1);
-    padding: 6px 12px;
-    border-radius: 999px;
-    border: 1px solid rgba(249, 115, 22, 0.2);
-}
-
-.plan-mode-btn {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-muted, #4d5f80);
-    background: transparent;
-}
-
-/* ============================================================
-   BOTÃO SPOTIFY
+   SPOTIFY
    ============================================================ */
 
 .spotify-btn {
@@ -381,7 +314,7 @@
     justify-content: space-between;
     box-shadow: var(--shadow-card);
     border: 1px solid var(--border-color);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    transition: transform 0.15s ease;
 }
 
 .day-card:active {
@@ -414,7 +347,7 @@
 }
 
 .day-done .day-checkbox {
-    background: var(--green);
+    background: var(--green, #22c55e);
     color: #ffffff;
     box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
 }
@@ -438,7 +371,7 @@
     font-size: 13px;
     font-weight: 700;
     flex-shrink: 0;
-    transition: transform 0.15s, box-shadow 0.15s;
+    transition: transform 0.15s;
 }
 
 .day-action-btn:active {
