@@ -131,7 +131,7 @@ export default function SettingsPage({
             <div className="settings-scroll">
 
                 {/* Título */}
-                <h1 className="settings-title">Configurações</h1>
+                <h1 className="settings-title">⚙️ Configurações</h1>
 
                 {/* Cabeçalho de perfil */}
                 <div className="settings-profile-header">
