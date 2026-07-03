@@ -1,7 +1,6 @@
 // ============================================================
 // settingspage.jsx
 // Tela de configurações do BoraCorrer.
-// Preferências (tema, voz, lembretes) vêm do Firestore via props.
 // ============================================================
 
 import React, { useState } from 'react';
@@ -69,18 +68,22 @@ export default function SettingsPage({
     onLogout,
     onResetProfile,
 }) {
-    const { isSupported, scheduleReminder } = usePushNotification();
+    // requestAndNotify: solicita permissão e dispara notificação de confirmação
+    const { isSupported, permission, requestAndNotify } = usePushNotification();
 
-    const [editingName,  setEditingName]  = useState(false);
-    const [nameInput,    setNameInput]    = useState(user?.displayName || '');
-    const [savingName,   setSavingName]   = useState(false);
-    const [nameSaved,    setNameSaved]    = useState(false);
-    const [showLogout,   setShowLogout]   = useState(false);
+    const [editingName,       setEditingName]       = useState(false);
+    const [nameInput,         setNameInput]         = useState(user?.displayName || '');
+    const [savingName,        setSavingName]        = useState(false);
+    const [nameSaved,         setNameSaved]         = useState(false);
+    const [showLogout,        setShowLogout]        = useState(false);
+    const [notifError,        setNotifError]        = useState(null);
+    const [notifSuccess,      setNotifSuccess]      = useState(false);
 
     const firstName     = user?.displayName ? user.displayName.split(' ')[0] : 'Usuário';
     const totalWorkouts = completedDays.length;
     const planLabel     = currentPlanId === '10k' ? '5K → 10K' : 'Zero → 5K';
 
+    // ---- Salvar nome ----
     async function handleSaveName() {
         if (!nameInput.trim()) return;
         setSavingName(true);
@@ -91,9 +94,29 @@ export default function SettingsPage({
         setTimeout(() => setNameSaved(false), 2000);
     }
 
+    // ---- Toggle de notificações ----
     async function handleReminderToggle() {
         const newVal = !remindersEnabled;
-        if (newVal) await scheduleReminder();
+
+        if (newVal) {
+            // Ativar: solicita permissão e confirma com notificação
+            setNotifError(null);
+            const granted = await requestAndNotify();
+
+            if (!granted) {
+                setNotifError(
+                    permission === 'denied'
+                        ? 'Permissão bloqueada. Ative nas configurações do navegador.'
+                        : 'Permissão não concedida. Tente novamente.'
+                );
+                return;
+            }
+
+            setNotifSuccess(true);
+            setTimeout(() => setNotifSuccess(false), 3000);
+        }
+
+        // Persiste a preferência no Firestore via app.jsx
         onSavePreference('remindersEnabled', newVal);
     }
 
@@ -247,9 +270,13 @@ export default function SettingsPage({
                         <SettingsRow
                             icon="🔔"
                             label="Lembretes de treino"
-                            sublabel={remindersEnabled
-                                ? 'Você receberá lembretes para treinar'
-                                : 'Ativar notificações push no dispositivo'}
+                            sublabel={
+                                notifError   ? notifError :
+                                notifSuccess ? '✅ Lembretes ativados com sucesso!' :
+                                remindersEnabled
+                                    ? 'Você receberá lembretes para treinar'
+                                    : 'Ativar notificações push no dispositivo'
+                            }
                             right={
                                 <Toggle
                                     value={remindersEnabled}
