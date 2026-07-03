@@ -16,6 +16,14 @@
     padding: 24px 16px 100px; /* 100px = espaço para a bottom nav */
 }
 
+/* Título da página — mesmo padrão de calendar-page-title e history-page-title */
+.settings-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text-primary, #f0f4ff);
+    margin-bottom: 20px;
+}
+
 /* ============================================================
    CABEÇALHO DE PERFIL
    ============================================================ */
