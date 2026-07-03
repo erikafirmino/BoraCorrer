@@ -53,7 +53,7 @@ function CalendarContent({ onClose, embedded }) {
         <div className={embedded ? 'calendar-embedded' : 'calendar-sheet'}>
 
             {embedded && (
-                <h2 className="calendar-page-title">📅 Histórico</h2>
+                <h2 className="calendar-page-title">📅 Calendário</h2>
             )}
 
             <div className="calendar-header">
